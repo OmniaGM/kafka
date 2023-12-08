@@ -298,7 +298,7 @@ class BrokerServer(
         () => lifecycleManager.brokerEpoch
       )
 
-      val directoryEventHandler = if (config.interBrokerProtocolVersion.isJBODSupportedOnKRAFT) {
+      val directoryEventHandler = if (logManager.directoryIds.size > 1 && config.interBrokerProtocolVersion.isJBODSupportedOnKRAFT) {
         new DirectoryEventHandler {
           override def handleAssignment(partition: TopicIdPartition, directoryId: Uuid, callback: Runnable): Unit =
             assignmentsManager.onAssignment(partition, directoryId, callback)
