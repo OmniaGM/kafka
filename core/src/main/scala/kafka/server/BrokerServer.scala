@@ -255,8 +255,8 @@ class BrokerServer(
 
       val listenerInfo = ListenerInfo.create(Optional.of(config.interBrokerListenerName.value()),
           config.effectiveAdvertisedListeners.map(_.toJava).asJava).
-            withWildcardHostnamesResolved().
-            withEphemeralPortsCorrected(name => socketServer.boundPort(new ListenerName(name)))
+        withWildcardHostnamesResolved().
+        withEphemeralPortsCorrected(name => socketServer.boundPort(new ListenerName(name)))
 
       alterPartitionManager = AlterPartitionManager(
         config,
@@ -297,12 +297,17 @@ class BrokerServer(
         config.brokerId,
         () => lifecycleManager.brokerEpoch
       )
-      val directoryEventHandler = new DirectoryEventHandler {
-        override def handleAssignment(partition: TopicIdPartition, directoryId: Uuid, callback: Runnable): Unit =
-          assignmentsManager.onAssignment(partition, directoryId, callback)
 
-        override def handleFailure(directoryId: Uuid): Unit =
-          lifecycleManager.propagateDirectoryFailure(directoryId)
+      val directoryEventHandler = if (config.interBrokerProtocolVersion.isJBODSupportedOnKRAFT) {
+        new DirectoryEventHandler {
+          override def handleAssignment(partition: TopicIdPartition, directoryId: Uuid, callback: Runnable): Unit =
+            assignmentsManager.onAssignment(partition, directoryId, callback)
+
+          override def handleFailure(directoryId: Uuid): Unit =
+            lifecycleManager.propagateDirectoryFailure(directoryId)
+        }
+      } else {
+        DirectoryEventHandler.NOOP
       }
 
       this._replicaManager = new ReplicaManager(

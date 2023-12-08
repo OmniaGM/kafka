@@ -319,6 +319,10 @@ public enum MetadataVersion {
         return this.isAtLeast(IBP_3_7_IV3);
     }
 
+    public boolean isJBODSupportedOnKRAFT() {
+        return this.isAtLeast(IBP_3_7_IV2);
+    }
+
     public boolean isKRaftSupported() {
         return this.featureLevel > 0;
     }
