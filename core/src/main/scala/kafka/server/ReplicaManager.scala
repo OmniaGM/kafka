@@ -632,7 +632,7 @@ class ReplicaManager(val config: KafkaConfig,
     Option(allPartitions.get(topicIdPartition)).getOrElse(HostedPartition.None)
   }
 
-  def isAddingReplica(topicPartition: TopicPartition, replicaId: Int): Boolean = {
+  def isAddingReplica(topicPartition: TopicIdPartition, replicaId: Int): Boolean = {
     getPartition(topicPartition) match {
       case Online(partition) => partition.isAddingReplica(replicaId)
       case _ => false
@@ -646,7 +646,7 @@ class ReplicaManager(val config: KafkaConfig,
     partition
   }
 
-  def onlinePartition(topicPartition: TopicPartition): Option[Partition] = {
+  def onlinePartition(topicPartition: TopicIdPartition): Option[Partition] = {
     getPartition(topicPartition) match {
       case HostedPartition.Online(partition) => Some(partition)
       case _ => None
@@ -1535,7 +1535,7 @@ class ReplicaManager(val config: KafkaConfig,
     if (!remoteFetchInfo.isPresent && (params.maxWaitMs <= 0 || fetchInfos.isEmpty || bytesReadable >= params.minBytes || errorReadingData ||
       hasDivergingEpoch || hasPreferredReadReplica)) {
       val fetchPartitionData = logReadResults.map { case (tp, result) =>
-        val isReassignmentFetch = params.isFromFollower && isAddingReplica(tp.topicPartition, params.replicaId)
+        val isReassignmentFetch = params.isFromFollower && isAddingReplica(tp, params.replicaId)
         tp -> result.toFetchPartitionData(isReassignmentFetch)
       }
       responseCallback(fetchPartitionData)
@@ -1896,7 +1896,8 @@ class ReplicaManager(val config: KafkaConfig,
           requestPartitionStates.foreach { partitionState =>
             val topicPartition = new TopicPartition(partitionState.topicName, partitionState.partitionIndex)
             allTopicPartitionsInRequest += topicPartition
-            val partitionOpt = getPartition(topicPartition) match {
+            val topicId = topicIdFromRequest(topicPartition.topic())
+            val partitionOpt = getPartition(new TopicIdPartition(topicId.get, topicPartition)) match {
               case HostedPartition.Offline =>
                 stateChangeLogger.warn(s"Ignoring LeaderAndIsr request from " +
                   s"controller $controllerId with correlation id $correlationId " +
@@ -2381,7 +2382,7 @@ class ReplicaManager(val config: KafkaConfig,
 
     // Shrink ISRs for non offline partitions
     allPartitions.keys.foreach { topicPartition =>
-      onlinePartition(topicPartition.topicPartition()).foreach(_.maybeShrinkIsr())
+      onlinePartition(topicPartition).foreach(_.maybeShrinkIsr())
     }
   }
 

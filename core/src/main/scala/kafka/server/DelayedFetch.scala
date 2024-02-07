@@ -174,7 +174,7 @@ class DelayedFetch(
 
     val fetchPartitionData = logReadResults.map { case (tp, result) =>
       val isReassignmentFetch = params.isFromFollower &&
-        replicaManager.isAddingReplica(tp.topicPartition, params.replicaId)
+        replicaManager.isAddingReplica(tp, params.replicaId)
 
       tp -> result.toFetchPartitionData(isReassignmentFetch)
     }
