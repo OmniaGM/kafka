@@ -66,7 +66,7 @@ import java.nio.file.{Files, Paths}
 import java.util
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.Lock
-import java.util.concurrent.{CompletableFuture, Future, RejectedExecutionException, TimeUnit}
+import java.util.concurrent.{CompletableFuture, Future, LinkedBlockingQueue, RejectedExecutionException, TimeUnit}
 import java.util.{Optional, OptionalInt, OptionalLong}
 import scala.collection.{Map, Seq, Set, mutable}
 import scala.compat.java8.OptionConverters._
@@ -297,8 +297,14 @@ class ReplicaManager(val config: KafkaConfig,
   /* epoch of the controller that last changed the leader */
   @volatile private[server] var controllerEpoch: Int = KafkaController.InitialControllerEpoch
   protected val localBrokerId = config.brokerId
-  protected val allPartitions = new Pool[TopicPartition, HostedPartition](
-    valueFactory = Some(tp => HostedPartition.Online(Partition(tp, time, this)))
+  private type TopicIdHostedPartition = (Option[Uuid], HostedPartition)
+  protected val allPartitions = new Pool[TopicPartition, LinkedBlockingQueue[TopicIdHostedPartition]](
+    valueFactory = Some(tp => {
+      val partition = Partition(tp, time, this)
+      new LinkedBlockingQueue[TopicIdHostedPartition]() {{
+        add(partition.topicId -> HostedPartition.Online(partition))
+      }}
+    })
   )
   protected val replicaStateChangeLock = new Object
   val replicaFetcherManager = createReplicaFetcherManager(metrics, time, threadNamePrefix, quotaManagers.follower)
@@ -396,10 +402,10 @@ class ReplicaManager(val config: KafkaConfig,
   }
 
   private def maybeRemoveTopicMetrics(topic: String): Unit = {
-    val topicHasNonOfflinePartition = allPartitions.values.exists {
-      case online: HostedPartition.Online => topic == online.partition.topic
-      case HostedPartition.None | HostedPartition.Offline(_) => false
-    }
+    val topicHasNonOfflinePartition = allPartitions.values.exists(_.iterator().asScala.exists {
+      case (_, online: HostedPartition.Online) => topic == online.partition.topic
+      case (_, HostedPartition.None | HostedPartition.Offline(_)) => false
+    })
     if (!topicHasNonOfflinePartition) // nothing online or deferred
       brokerTopicStats.removeMetrics(topic)
   }
@@ -624,8 +630,19 @@ class ReplicaManager(val config: KafkaConfig,
     errorMap
   }
 
+  /**
+   * Will return the lastest topic partition in the cache
+   * @param topicPartition
+   * @return
+   */
   def getPartition(topicPartition: TopicPartition): HostedPartition = {
-    Option(allPartitions.get(topicPartition)).getOrElse(HostedPartition.None)
+    Option(allPartitions.get(topicPartition).poll()._2).getOrElse(HostedPartition.None)
+  }
+
+  def getPartition(topicPartition: TopicIdPartition): TopicIdHostedPartition = {
+    allPartitions.get(topicPartition.topicPartition()).asScala
+      .find(p => p._1.contains(topicPartition.topicId()))
+      .getOrElse(None -> HostedPartition.None)
   }
 
   def isAddingReplica(topicPartition: TopicPartition, replicaId: Int): Boolean = {
@@ -638,7 +655,15 @@ class ReplicaManager(val config: KafkaConfig,
   // Visible for testing
   def createPartition(topicPartition: TopicPartition): Partition = {
     val partition = Partition(topicPartition, time, this)
-    allPartitions.put(topicPartition, HostedPartition.Online(partition))
+   if (allPartitions.contains(topicPartition)) {
+     val partitions: LinkedBlockingQueue[(Option[Uuid], HostedPartition)] = allPartitions.get(topicPartition)
+     if (partitions.asScala.exists(_._1.eq(partition.topicId))) {
+       partitions.asScala.filter(_._1.eq(partition.topicId)).foreach(hostedTopicPartition => {
+         partitions.remove(hostedTopicPartition)
+         partitions.put(partition.topicId -> HostedPartition.Online(partition))
+       })
+     }
+   }
     partition
   }
 
