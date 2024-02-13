@@ -404,14 +404,14 @@ class ReplicaManager(val config: KafkaConfig,
       brokerTopicStats.removeMetrics(topic)
   }
 
-  private[server] def updateStrayLogs(strayPartitions: Set[TopicPartition]): Unit = {
+  private[server] def updateStrayLogs(strayPartitions: Set[TopicIdPartition]): Unit = {
     if (strayPartitions.isEmpty) {
       return
     }
     warn(s"Found stray partitions ${strayPartitions.mkString(",")}")
 
     // First, stop the partitions. This will shutdown the fetchers and other managers
-    val partitionsToStop = strayPartitions.map(tp => StopPartition(tp, false)).toSet
+    val partitionsToStop = strayPartitions.map(tp => StopPartition(tp.topicPartition(), false)).toSet
     stopPartitions(partitionsToStop).forKeyValue { (topicPartition, exception) =>
       error(s"Unable to stop stray partition $topicPartition", exception)
     }
@@ -431,18 +431,18 @@ class ReplicaManager(val config: KafkaConfig,
 
     // Mark the log as stray in-memory and rename the directory
     strayPartitions.foreach { tp =>
-      logManager.getLog(tp).foreach(logManager.addStrayLog(tp, _))
-      logManager.getLog(tp, isFuture = true).foreach(logManager.addStrayLog(tp, _))
+      logManager.getLog(tp.topicPartition()).foreach(logManager.addStrayLog(tp.topicPartition(), _))
+      logManager.getLog(tp.topicPartition(), isFuture = true).foreach(logManager.addStrayLog(tp.topicPartition(), _))
     }
-    logManager.asyncDelete(strayPartitions, isStray = true, (topicPartition, e) => {
+    logManager.asyncDelete(strayPartitions.map(_.topicPartition()), isStray = true, (topicPartition, e) => {
       error(s"Failed to delete stray partition $topicPartition due to " +
         s"${e.getClass.getName} exception: ${e.getMessage}")
     })
   }
 
   // Find logs which exist on the broker, but aren't present in the full LISR
-  private[server] def findStrayPartitionsFromLeaderAndIsr(partitionsFromRequest: Set[TopicPartition]): Set[TopicPartition] = {
-    logManager.allLogs.map(_.topicPartition).filterNot(partitionsFromRequest.contains).toSet
+  private[server] def findStrayPartitionsFromLeaderAndIsr(partitionsFromRequest: Set[TopicPartition]): Set[TopicIdPartition] = {
+    logManager.allLogs.map(l => new TopicIdPartition(l.topicId.orNull, l.topicPartition)).filterNot(p=> partitionsFromRequest.contains(p.topicPartition())).toSet
   }
 
   protected def completeDelayedFetchOrProduceRequests(topicPartition: TopicPartition): Unit = {
