@@ -46,7 +46,7 @@ import org.apache.kafka.coordinator.group.GroupCoordinatorConfig
 import org.apache.kafka.metadata.authorizer.StandardAuthorizer
 import org.apache.kafka.network.Session
 import org.apache.kafka.server.authorizer.{Action, AuthorizableRequestContext, AuthorizationResult}
-import org.apache.kafka.server.config.{ServerConfigs, QuotaConfigs}
+import org.apache.kafka.server.config.{ServerConfig, QuotaConfigs}
 import org.junit.jupiter.api.Assertions._
 import org.junit.jupiter.api.{AfterEach, BeforeEach, TestInfo}
 import org.junit.jupiter.params.ParameterizedTest
@@ -79,17 +79,17 @@ class RequestQuotaTest extends BaseRequestTest {
   private val tasks = new ListBuffer[Task]
 
   override def brokerPropertyOverrides(properties: Properties): Unit = {
-    properties.put(ServerConfigs.CONTROLLED_SHUTDOWN_ENABLE_CONFIG, "false")
+    properties.put(ServerConfig.CONTROLLED_SHUTDOWN_ENABLE_CONFIG, "false")
     properties.put(GroupCoordinatorConfig.OFFSETS_TOPIC_REPLICATION_FACTOR_CONFIG, "1")
     properties.put(GroupCoordinatorConfig.OFFSETS_TOPIC_PARTITIONS_CONFIG, "1")
     properties.put(GroupCoordinatorConfig.GROUP_MIN_SESSION_TIMEOUT_MS_CONFIG, "100")
     properties.put(GroupCoordinatorConfig.GROUP_INITIAL_REBALANCE_DELAY_MS_CONFIG, "0")
     properties.put(BrokerSecurityConfigs.PRINCIPAL_BUILDER_CLASS_CONFIG, classOf[RequestQuotaTest.TestPrincipalBuilder].getName)
-    properties.put(ServerConfigs.UNSTABLE_API_VERSIONS_ENABLE_CONFIG, "true")
+    properties.put(ServerConfig.UNSTABLE_API_VERSIONS_ENABLE_CONFIG, "true")
     if (isKRaftTest()) {
-      properties.put(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, classOf[RequestQuotaTest.KraftTestAuthorizer].getName)
+      properties.put(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, classOf[RequestQuotaTest.KraftTestAuthorizer].getName)
     } else {
-      properties.put(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, classOf[RequestQuotaTest.ZkTestAuthorizer].getName)
+      properties.put(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, classOf[RequestQuotaTest.ZkTestAuthorizer].getName)
     }
   }
 

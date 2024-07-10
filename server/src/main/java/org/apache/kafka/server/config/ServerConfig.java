@@ -39,7 +39,7 @@ import static org.apache.kafka.common.config.ConfigDef.Type.INT;
 import static org.apache.kafka.common.config.ConfigDef.Type.LONG;
 import static org.apache.kafka.common.config.ConfigDef.Type.STRING;
 
-public class ServerConfigs {
+public class ServerConfig {
     /** ********* General Configuration ***********/
     public static final String RESERVED_BROKER_MAX_ID_CONFIG = "reserved.broker.max.id";
     public static final int RESERVED_BROKER_MAX_ID_DEFAULT = 1000;
@@ -217,26 +217,26 @@ public class ServerConfigs {
     private final long queuedMaxBytes;
     private final AbstractConfig config;
 
-    public ServerConfigs(AbstractConfig config) {
+    public ServerConfig(AbstractConfig config) {
         this.config = config;
-        brokerIdGenerationEnable = config.getBoolean(ServerConfigs.BROKER_ID_GENERATION_ENABLE_CONFIG);
-        maxReservedBrokerId = config.getInt(ServerConfigs.RESERVED_BROKER_MAX_ID_CONFIG);
-        brokerId = config.getInt(ServerConfigs.BROKER_ID_CONFIG);
-        requestTimeoutMs = config.getInt(ServerConfigs.REQUEST_TIMEOUT_MS_CONFIG);
-        connectionSetupTimeoutMs = config.getLong(ServerConfigs.SOCKET_CONNECTION_SETUP_TIMEOUT_MS_CONFIG);
-        connectionSetupTimeoutMaxMs = config.getLong(ServerConfigs.SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_CONFIG);
-        rack = Optional.ofNullable(config.getString(ServerConfigs.BROKER_RACK_CONFIG));
-        controlledShutdownMaxRetries = config.getInt(ServerConfigs.CONTROLLED_SHUTDOWN_MAX_RETRIES_CONFIG);
-        controlledShutdownRetryBackoffMs = config.getLong(ServerConfigs.CONTROLLED_SHUTDOWN_RETRY_BACKOFF_MS_CONFIG);
-        controlledShutdownEnable = config.getBoolean(ServerConfigs.CONTROLLED_SHUTDOWN_ENABLE_CONFIG);
-        maxIncrementalFetchSessionCacheSlots = config.getInt(ServerConfigs.MAX_INCREMENTAL_FETCH_SESSION_CACHE_SLOTS_CONFIG);
-        fetchMaxBytes = config.getInt(ServerConfigs.FETCH_MAX_BYTES_CONFIG);
-        maxRequestPartitionSizeLimit = config.getInt(ServerConfigs.MAX_REQUEST_PARTITION_SIZE_LIMIT_CONFIG);
-        deleteTopicEnable = config.getBoolean(ServerConfigs.DELETE_TOPIC_ENABLE_CONFIG);
-        unstableApiVersionsEnabled = config.getBoolean(ServerConfigs.UNSTABLE_API_VERSIONS_ENABLE_CONFIG);
-        unstableFeatureVersionsEnabled = config.getBoolean(ServerConfigs.UNSTABLE_FEATURE_VERSIONS_ENABLE_CONFIG);
-        queuedMaxRequests = config.getInt(ServerConfigs.QUEUED_MAX_REQUESTS_CONFIG);
-        queuedMaxBytes = config.getLong(ServerConfigs.QUEUED_MAX_BYTES_CONFIG);
+        brokerIdGenerationEnable = config.getBoolean(ServerConfig.BROKER_ID_GENERATION_ENABLE_CONFIG);
+        maxReservedBrokerId = config.getInt(ServerConfig.RESERVED_BROKER_MAX_ID_CONFIG);
+        brokerId = config.getInt(ServerConfig.BROKER_ID_CONFIG);
+        requestTimeoutMs = config.getInt(ServerConfig.REQUEST_TIMEOUT_MS_CONFIG);
+        connectionSetupTimeoutMs = config.getLong(ServerConfig.SOCKET_CONNECTION_SETUP_TIMEOUT_MS_CONFIG);
+        connectionSetupTimeoutMaxMs = config.getLong(ServerConfig.SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_CONFIG);
+        rack = Optional.ofNullable(config.getString(ServerConfig.BROKER_RACK_CONFIG));
+        controlledShutdownMaxRetries = config.getInt(ServerConfig.CONTROLLED_SHUTDOWN_MAX_RETRIES_CONFIG);
+        controlledShutdownRetryBackoffMs = config.getLong(ServerConfig.CONTROLLED_SHUTDOWN_RETRY_BACKOFF_MS_CONFIG);
+        controlledShutdownEnable = config.getBoolean(ServerConfig.CONTROLLED_SHUTDOWN_ENABLE_CONFIG);
+        maxIncrementalFetchSessionCacheSlots = config.getInt(ServerConfig.MAX_INCREMENTAL_FETCH_SESSION_CACHE_SLOTS_CONFIG);
+        fetchMaxBytes = config.getInt(ServerConfig.FETCH_MAX_BYTES_CONFIG);
+        maxRequestPartitionSizeLimit = config.getInt(ServerConfig.MAX_REQUEST_PARTITION_SIZE_LIMIT_CONFIG);
+        deleteTopicEnable = config.getBoolean(ServerConfig.DELETE_TOPIC_ENABLE_CONFIG);
+        unstableApiVersionsEnabled = config.getBoolean(ServerConfig.UNSTABLE_API_VERSIONS_ENABLE_CONFIG);
+        unstableFeatureVersionsEnabled = config.getBoolean(ServerConfig.UNSTABLE_FEATURE_VERSIONS_ENABLE_CONFIG);
+        queuedMaxRequests = config.getInt(ServerConfig.QUEUED_MAX_REQUESTS_CONFIG);
+        queuedMaxBytes = config.getLong(ServerConfig.QUEUED_MAX_BYTES_CONFIG);
     }
 
     public boolean brokerIdGenerationEnable() {
@@ -316,46 +316,46 @@ public class ServerConfigs {
     }
 
     public int numNetworkThreads() {
-        return config.getInt(ServerConfigs.NUM_NETWORK_THREADS_CONFIG);
+        return config.getInt(ServerConfig.NUM_NETWORK_THREADS_CONFIG);
     }
 
     public int backgroundThreads() {
-        return config.getInt(ServerConfigs.BACKGROUND_THREADS_CONFIG);
+        return config.getInt(ServerConfig.BACKGROUND_THREADS_CONFIG);
     }
 
     public int numIoThreads() {
-        return config.getInt(ServerConfigs.NUM_IO_THREADS_CONFIG);
+        return config.getInt(ServerConfig.NUM_IO_THREADS_CONFIG);
     }
 
     public int messageMaxBytes() {
-        return config.getInt(ServerConfigs.MESSAGE_MAX_BYTES_CONFIG);
+        return config.getInt(ServerConfig.MESSAGE_MAX_BYTES_CONFIG);
     }
 
     public String compressionType() {
-        return config.getString(ServerConfigs.COMPRESSION_TYPE_CONFIG);
+        return config.getString(ServerConfig.COMPRESSION_TYPE_CONFIG);
     }
 
     public int gzipCompressionLevel() {
-        return config.getInt(ServerConfigs.COMPRESSION_GZIP_LEVEL_CONFIG);
+        return config.getInt(ServerConfig.COMPRESSION_GZIP_LEVEL_CONFIG);
     }
 
     public int lz4CompressionLevel() {
-        return config.getInt(ServerConfigs.COMPRESSION_LZ4_LEVEL_CONFIG);
+        return config.getInt(ServerConfig.COMPRESSION_LZ4_LEVEL_CONFIG);
     }
 
     public int zstdCompressionLevel() {
-        return config.getInt(ServerConfigs.COMPRESSION_ZSTD_LEVEL_CONFIG);
+        return config.getInt(ServerConfig.COMPRESSION_ZSTD_LEVEL_CONFIG);
     }
 
     public Optional<Integer> numReplicaAlterLogDirsThread() {
-        return Optional.ofNullable(config.getInt(ServerConfigs.NUM_REPLICA_ALTER_LOG_DIRS_THREADS_CONFIG));
+        return Optional.ofNullable(config.getInt(ServerConfig.NUM_REPLICA_ALTER_LOG_DIRS_THREADS_CONFIG));
     }
 
     public String authorizerClassName() {
-        return config.getString(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG);
+        return config.getString(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG);
     }
 
     public Optional<String> earlyStartListeners() {
-        return Optional.ofNullable(config.getString(ServerConfigs.EARLY_START_LISTENERS_CONFIG));
+        return Optional.ofNullable(config.getString(ServerConfig.EARLY_START_LISTENERS_CONFIG));
     }
 }

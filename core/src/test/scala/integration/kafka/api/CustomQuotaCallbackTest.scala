@@ -32,7 +32,7 @@ import org.apache.kafka.common.config.SaslConfigs
 import org.apache.kafka.common.config.internals.BrokerSecurityConfigs
 import org.apache.kafka.common.network.ListenerName
 import org.apache.kafka.common.security.auth._
-import org.apache.kafka.server.config.{ServerConfigs, QuotaConfigs}
+import org.apache.kafka.server.config.{ServerConfig, QuotaConfigs}
 import org.apache.kafka.server.quota._
 import org.junit.jupiter.api.Assertions._
 import org.junit.jupiter.api.{AfterEach, BeforeEach, Test, TestInfo}
@@ -66,7 +66,7 @@ class CustomQuotaCallbackTest extends IntegrationTestHarness with SaslSetup {
     this.serverConfig.setProperty(QuotaConfigs.CLIENT_QUOTA_CALLBACK_CLASS_CONFIG, classOf[GroupedUserQuotaCallback].getName)
     this.serverConfig.setProperty(s"${listenerName.configPrefix}${BrokerSecurityConfigs.PRINCIPAL_BUILDER_CLASS_CONFIG}",
       classOf[GroupedUserPrincipalBuilder].getName)
-    this.serverConfig.setProperty(ServerConfigs.DELETE_TOPIC_ENABLE_CONFIG, "true")
+    this.serverConfig.setProperty(ServerConfig.DELETE_TOPIC_ENABLE_CONFIG, "true")
     super.setUp(testInfo)
 
     producerConfig.put(SaslConfigs.SASL_JAAS_CONFIG,
@@ -368,7 +368,7 @@ class GroupedUserQuotaCallback extends ClientQuotaCallback with Reconfigurable w
   val partitionRatio = new ConcurrentHashMap[String, Double]()
 
   override def configure(configs: util.Map[String, _]): Unit = {
-    brokerId = configs.get(ServerConfigs.BROKER_ID_CONFIG).toString.toInt
+    brokerId = configs.get(ServerConfig.BROKER_ID_CONFIG).toString.toInt
     callbackInstances.incrementAndGet
   }
 

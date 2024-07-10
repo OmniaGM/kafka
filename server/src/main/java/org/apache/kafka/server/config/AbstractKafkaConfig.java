@@ -45,7 +45,7 @@ public abstract class AbstractKafkaConfig extends AbstractConfig {
     public static final ConfigDef CONFIG_DEF =  Utils.mergeConfigs(Arrays.asList(
             RemoteLogManagerConfig.configDef(),
             ZkConfigs.CONFIG_DEF,
-            ServerConfigs.CONFIG_DEF,
+            ServerConfig.CONFIG_DEF,
             KRaftConfigs.CONFIG_DEF,
             SocketServerConfigs.CONFIG_DEF,
             ReplicationConfigs.CONFIG_DEF,

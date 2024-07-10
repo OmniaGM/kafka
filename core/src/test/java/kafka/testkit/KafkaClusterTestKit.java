@@ -41,7 +41,7 @@ import org.apache.kafka.network.SocketServerConfigs;
 import org.apache.kafka.raft.QuorumConfig;
 import org.apache.kafka.server.common.ApiMessageAndVersion;
 import org.apache.kafka.server.config.KRaftConfigs;
-import org.apache.kafka.server.config.ServerConfigs;
+import org.apache.kafka.server.config.ServerConfig;
 import org.apache.kafka.server.fault.FaultHandler;
 import org.apache.kafka.server.fault.MockFaultHandler;
 import org.apache.kafka.storage.internals.log.CleanerConfig;
@@ -214,8 +214,8 @@ public class KafkaClusterTestKit implements AutoCloseable {
             if (controllerNode != null) {
                 props.putAll(controllerNode.propertyOverrides());
             }
-            props.putIfAbsent(ServerConfigs.UNSTABLE_FEATURE_VERSIONS_ENABLE_CONFIG, "true");
-            props.putIfAbsent(ServerConfigs.UNSTABLE_API_VERSIONS_ENABLE_CONFIG, "true");
+            props.putIfAbsent(ServerConfig.UNSTABLE_FEATURE_VERSIONS_ENABLE_CONFIG, "true");
+            props.putIfAbsent(ServerConfig.UNSTABLE_API_VERSIONS_ENABLE_CONFIG, "true");
             return new KafkaConfig(props, false);
         }
 

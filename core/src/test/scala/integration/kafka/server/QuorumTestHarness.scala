@@ -38,7 +38,7 @@ import org.apache.kafka.metadata.properties.{MetaProperties, MetaPropertiesEnsem
 import org.apache.kafka.network.SocketServerConfigs
 import org.apache.kafka.raft.QuorumConfig
 import org.apache.kafka.server.common.{ApiMessageAndVersion, MetadataVersion}
-import org.apache.kafka.server.config.{KRaftConfigs, ServerConfigs, ServerLogConfigs}
+import org.apache.kafka.server.config.{KRaftConfigs, ServerConfig, ServerLogConfigs}
 import org.apache.kafka.server.fault.{FaultHandler, MockFaultHandler}
 import org.apache.zookeeper.client.ZKClientConfig
 import org.apache.zookeeper.{WatchedEvent, Watcher, ZooKeeper}
@@ -327,7 +327,7 @@ abstract class QuorumTestHarness extends Logging {
     props.putAll(overridingProps)
     props.setProperty(KRaftConfigs.SERVER_MAX_STARTUP_TIME_MS_CONFIG, TimeUnit.MINUTES.toMillis(10).toString)
     props.setProperty(KRaftConfigs.PROCESS_ROLES_CONFIG, "controller")
-    props.setProperty(ServerConfigs.UNSTABLE_FEATURE_VERSIONS_ENABLE_CONFIG, "true")
+    props.setProperty(ServerConfig.UNSTABLE_FEATURE_VERSIONS_ENABLE_CONFIG, "true")
     if (props.getProperty(KRaftConfigs.NODE_ID_CONFIG) == null) {
       props.setProperty(KRaftConfigs.NODE_ID_CONFIG, "1000")
     }

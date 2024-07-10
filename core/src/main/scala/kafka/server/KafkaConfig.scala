@@ -44,7 +44,7 @@ import org.apache.kafka.server.ProcessRole
 import org.apache.kafka.server.authorizer.Authorizer
 import org.apache.kafka.server.common.MetadataVersion
 import org.apache.kafka.server.common.MetadataVersion._
-import org.apache.kafka.server.config.{AbstractKafkaConfig, DelegationTokenManagerConfigs, KRaftConfigs, QuotaConfigs, ReplicationConfigs, ServerConfigs, ServerLogConfigs, ShareGroupConfigs, ZkConfigs}
+import org.apache.kafka.server.config.{AbstractKafkaConfig, DelegationTokenManagerConfigs, KRaftConfigs, QuotaConfigs, ReplicationConfigs, ServerConfig, ServerLogConfigs, ShareGroupConfigs, ZkConfigs}
 import org.apache.kafka.server.log.remote.storage.RemoteLogManagerConfig
 import org.apache.kafka.server.metrics.MetricConfigs
 import org.apache.kafka.server.util.Csv
@@ -161,10 +161,10 @@ object KafkaConfig {
    */
   def populateSynonyms(input: util.Map[_, _]): util.Map[Any, Any] = {
     val output = new util.HashMap[Any, Any](input)
-    val brokerId = output.get(ServerConfigs.BROKER_ID_CONFIG)
+    val brokerId = output.get(ServerConfig.BROKER_ID_CONFIG)
     val nodeId = output.get(KRaftConfigs.NODE_ID_CONFIG)
     if (brokerId == null && nodeId != null) {
-      output.put(ServerConfigs.BROKER_ID_CONFIG, nodeId)
+      output.put(ServerConfig.BROKER_ID_CONFIG, nodeId)
     } else if (brokerId != null && nodeId == null) {
       output.put(KRaftConfigs.NODE_ID_CONFIG, brokerId)
     }
@@ -233,9 +233,9 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   private val _groupCoordinatorConfig = new GroupCoordinatorConfig(this)
   def groupCoordinatorConfig: GroupCoordinatorConfig = _groupCoordinatorConfig
 
-  private val _serverConfig = new ServerConfigs(this)
+  private val _serverConfig = new ServerConfig(this)
 
-  def serverConfig: ServerConfigs = _serverConfig
+  def serverConfig: ServerConfig = _serverConfig
 
   private def zkBooleanConfigOrSystemPropertyWithDefaultValue(propKey: String): Boolean = {
     // Use the system property if it exists and the Kafka config value was defaulted rather than actually provided
@@ -390,7 +390,7 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
         str.split(",").map(_.trim()).filterNot(_.isEmpty).map { str =>
           val listenerName = new ListenerName(str)
           if (!listenersSet.contains(listenerName) && !controllerListenersSet.contains(listenerName))
-            throw new ConfigException(s"${ServerConfigs.EARLY_START_LISTENERS_CONFIG} contains " +
+            throw new ConfigException(s"${ServerConfig.EARLY_START_LISTENERS_CONFIG} contains " +
               s"listener ${listenerName.value()}, but this is not contained in " +
               s"${SocketServerConfigs.LISTENERS_CONFIG} or ${KRaftConfigs.CONTROLLER_LISTENER_NAMES_CONFIG}")
           listenerName
@@ -821,7 +821,7 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   @nowarn("cat=deprecation")
   private def validateValues(): Unit = {
     if (nodeId != _serverConfig.brokerId) {
-      throw new ConfigException(s"You must set `${KRaftConfigs.NODE_ID_CONFIG}` to the same value as `${ServerConfigs.BROKER_ID_CONFIG}`.")
+      throw new ConfigException(s"You must set `${KRaftConfigs.NODE_ID_CONFIG}` to the same value as `${ServerConfig.BROKER_ID_CONFIG}`.")
     }
     if (requiresZookeeper) {
       if (zkConnect == null) {
@@ -1016,7 +1016,7 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
     require(!interBrokerUsesSasl || saslEnabledMechanisms(interBrokerListenerName).contains(saslMechanismInterBrokerProtocol),
       s"${BrokerSecurityConfigs.SASL_MECHANISM_INTER_BROKER_PROTOCOL_CONFIG} must be included in ${BrokerSecurityConfigs.SASL_ENABLED_MECHANISMS_CONFIG} when SASL is used for inter-broker communication")
     require(_serverConfig.queuedMaxBytes <= 0 || _serverConfig.queuedMaxBytes >= socketRequestMaxBytes,
-      s"${ServerConfigs.QUEUED_MAX_BYTES_CONFIG} must be larger or equal to ${SocketServerConfigs.SOCKET_REQUEST_MAX_BYTES_CONFIG}")
+      s"${ServerConfig.QUEUED_MAX_BYTES_CONFIG} must be larger or equal to ${SocketServerConfigs.SOCKET_REQUEST_MAX_BYTES_CONFIG}")
 
     if (maxConnectionsPerIp == 0)
       require(maxConnectionsPerIpOverrides.nonEmpty, s"${SocketServerConfigs.MAX_CONNECTIONS_PER_IP_CONFIG} can be set to zero only if" +

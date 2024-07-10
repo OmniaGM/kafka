@@ -29,7 +29,7 @@ import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.errors.{KafkaStorageException, NotLeaderOrFollowerException}
 import org.apache.kafka.common.utils.Utils
 import org.apache.kafka.metadata.BrokerState
-import org.apache.kafka.server.config.{ReplicationConfigs, ServerConfigs, ServerLogConfigs}
+import org.apache.kafka.server.config.{ReplicationConfigs, ServerConfig, ServerLogConfigs}
 import org.junit.jupiter.api.Assertions._
 import org.junit.jupiter.api.{BeforeEach, Test, TestInfo}
 import org.junit.jupiter.params.provider.ValueSource
@@ -54,7 +54,7 @@ class LogDirFailureTest extends IntegrationTestHarness {
   this.serverConfig.setProperty(ReplicationConfigs.REPLICA_HIGH_WATERMARK_CHECKPOINT_INTERVAL_MS_CONFIG, "60000")
   this.serverConfig.setProperty(ReplicationConfigs.NUM_REPLICA_FETCHERS_CONFIG, "1")
   this.serverConfig.setProperty(ServerLogConfigs.LOG_DIR_FAILURE_TIMEOUT_MS_CONFIG, "5000")
-  this.serverConfig.setProperty(ServerConfigs.CONTROLLED_SHUTDOWN_ENABLE_CONFIG, "false")
+  this.serverConfig.setProperty(ServerConfig.CONTROLLED_SHUTDOWN_ENABLE_CONFIG, "false")
 
   @BeforeEach
   override def setUp(testInfo: TestInfo): Unit = {

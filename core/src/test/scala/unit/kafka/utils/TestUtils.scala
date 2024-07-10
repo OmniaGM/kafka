@@ -60,7 +60,7 @@ import org.apache.kafka.queue.KafkaEventQueue
 import org.apache.kafka.raft.QuorumConfig
 import org.apache.kafka.server.authorizer.{AuthorizableRequestContext, Authorizer => JAuthorizer}
 import org.apache.kafka.server.common.{ApiMessageAndVersion, MetadataVersion}
-import org.apache.kafka.server.config.{DelegationTokenManagerConfigs, KRaftConfigs, ReplicationConfigs, ServerConfigs, ServerLogConfigs, ZkConfigs}
+import org.apache.kafka.server.config.{DelegationTokenManagerConfigs, KRaftConfigs, ReplicationConfigs, ServerConfig, ServerLogConfigs, ZkConfigs}
 import org.apache.kafka.server.metrics.KafkaYammerMetrics
 import org.apache.kafka.server.util.MockTime
 import org.apache.kafka.server.util.timer.SystemTimer
@@ -304,19 +304,19 @@ object TestUtils extends Logging {
     }.mkString(",")
 
     val props = new Properties
-    props.put(ServerConfigs.UNSTABLE_FEATURE_VERSIONS_ENABLE_CONFIG, "true")
-    props.put(ServerConfigs.UNSTABLE_API_VERSIONS_ENABLE_CONFIG, "true")
+    props.put(ServerConfig.UNSTABLE_FEATURE_VERSIONS_ENABLE_CONFIG, "true")
+    props.put(ServerConfig.UNSTABLE_API_VERSIONS_ENABLE_CONFIG, "true")
     if (zkConnect == null) {
       props.setProperty(KRaftConfigs.SERVER_MAX_STARTUP_TIME_MS_CONFIG, TimeUnit.MINUTES.toMillis(10).toString)
       props.put(KRaftConfigs.NODE_ID_CONFIG, nodeId.toString)
-      props.put(ServerConfigs.BROKER_ID_CONFIG, nodeId.toString)
+      props.put(ServerConfig.BROKER_ID_CONFIG, nodeId.toString)
       props.put(SocketServerConfigs.ADVERTISED_LISTENERS_CONFIG, listeners)
       props.put(SocketServerConfigs.LISTENERS_CONFIG, listeners)
       props.put(KRaftConfigs.CONTROLLER_LISTENER_NAMES_CONFIG, "CONTROLLER")
       props.put(SocketServerConfigs.LISTENER_SECURITY_PROTOCOL_MAP_CONFIG, protocolAndPorts.
         map(p => "%s:%s".format(p._1, p._1)).mkString(",") + ",CONTROLLER:PLAINTEXT")
     } else {
-      if (nodeId >= 0) props.put(ServerConfigs.BROKER_ID_CONFIG, nodeId.toString)
+      if (nodeId >= 0) props.put(ServerConfig.BROKER_ID_CONFIG, nodeId.toString)
       props.put(SocketServerConfigs.LISTENERS_CONFIG, listeners)
     }
     if (logDirCount > 1) {
@@ -342,20 +342,20 @@ object TestUtils extends Logging {
     }
     props.put(ReplicationConfigs.REPLICA_SOCKET_TIMEOUT_MS_CONFIG, "1500")
     props.put(ReplicationConfigs.CONTROLLER_SOCKET_TIMEOUT_MS_CONFIG, "1500")
-    props.put(ServerConfigs.CONTROLLED_SHUTDOWN_ENABLE_CONFIG, enableControlledShutdown.toString)
-    props.put(ServerConfigs.DELETE_TOPIC_ENABLE_CONFIG, enableDeleteTopic.toString)
+    props.put(ServerConfig.CONTROLLED_SHUTDOWN_ENABLE_CONFIG, enableControlledShutdown.toString)
+    props.put(ServerConfig.DELETE_TOPIC_ENABLE_CONFIG, enableDeleteTopic.toString)
     props.put(ServerLogConfigs.LOG_DELETE_DELAY_MS_CONFIG, "1000")
-    props.put(ServerConfigs.CONTROLLED_SHUTDOWN_RETRY_BACKOFF_MS_CONFIG, "100")
+    props.put(ServerConfig.CONTROLLED_SHUTDOWN_RETRY_BACKOFF_MS_CONFIG, "100")
     props.put(CleanerConfig.LOG_CLEANER_DEDUPE_BUFFER_SIZE_PROP, "2097152")
     props.put(GroupCoordinatorConfig.OFFSETS_TOPIC_REPLICATION_FACTOR_CONFIG, "1")
     if (!props.containsKey(GroupCoordinatorConfig.OFFSETS_TOPIC_PARTITIONS_CONFIG))
       props.put(GroupCoordinatorConfig.OFFSETS_TOPIC_PARTITIONS_CONFIG, "5")
     if (!props.containsKey(GroupCoordinatorConfig.GROUP_INITIAL_REBALANCE_DELAY_MS_CONFIG))
       props.put(GroupCoordinatorConfig.GROUP_INITIAL_REBALANCE_DELAY_MS_CONFIG, "0")
-    rack.foreach(props.put(ServerConfigs.BROKER_RACK_CONFIG, _))
+    rack.foreach(props.put(ServerConfig.BROKER_RACK_CONFIG, _))
     // Reduce number of threads per broker
-    props.put(ServerConfigs.NUM_NETWORK_THREADS_CONFIG, "2")
-    props.put(ServerConfigs.BACKGROUND_THREADS_CONFIG, "2")
+    props.put(ServerConfig.NUM_NETWORK_THREADS_CONFIG, "2")
+    props.put(ServerConfig.BACKGROUND_THREADS_CONFIG, "2")
 
     if (protocolAndPorts.exists { case (protocol, _) => usesSslTransportLayer(protocol) })
       props ++= sslConfigs(ConnectionMode.SERVER, false, trustStoreFile, s"server$nodeId")
@@ -374,7 +374,7 @@ object TestUtils extends Logging {
     props.put(ReplicationConfigs.DEFAULT_REPLICATION_FACTOR_CONFIG, defaultReplicationFactor.toString)
 
     if (enableFetchFromFollower) {
-      props.put(ServerConfigs.BROKER_RACK_CONFIG, nodeId.toString)
+      props.put(ServerConfig.BROKER_RACK_CONFIG, nodeId.toString)
       props.put(ReplicationConfigs.REPLICA_SELECTOR_CLASS_CONFIG, "org.apache.kafka.common.replica.RackAwareReplicaSelector")
     }
     props

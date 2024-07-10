@@ -33,7 +33,7 @@ import org.apache.kafka.server.common.{ApiMessageAndVersion, Features, MetadataV
 import org.apache.kafka.common.metadata.{FeatureLevelRecord, UserScramCredentialRecord}
 import org.apache.kafka.metadata.properties.{MetaProperties, MetaPropertiesEnsemble, MetaPropertiesVersion, PropertiesUtils}
 import org.apache.kafka.raft.QuorumConfig
-import org.apache.kafka.server.config.{KRaftConfigs, ReplicationConfigs, ServerConfigs, ServerLogConfigs}
+import org.apache.kafka.server.config.{KRaftConfigs, ReplicationConfigs, ServerConfig, ServerLogConfigs}
 import org.junit.jupiter.api.Assertions.{assertEquals, assertFalse, assertThrows, assertTrue}
 import org.junit.jupiter.api.{Test, Timeout}
 import org.junit.jupiter.params.ParameterizedTest
@@ -638,7 +638,7 @@ Found problem:
     val propsStream = Files.newOutputStream(propsFile.toPath)
     try {
       properties.setProperty(ServerLogConfigs.LOG_DIRS_CONFIG, TestUtils.tempDir().toString)
-      properties.setProperty(ServerConfigs.UNSTABLE_FEATURE_VERSIONS_ENABLE_CONFIG, enableUnstable.toString)
+      properties.setProperty(ServerConfig.UNSTABLE_FEATURE_VERSIONS_ENABLE_CONFIG, enableUnstable.toString)
       properties.store(propsStream, "config.props")
     } finally {
       propsStream.close()

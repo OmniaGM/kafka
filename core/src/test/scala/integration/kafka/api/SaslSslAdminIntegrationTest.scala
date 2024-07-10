@@ -27,7 +27,7 @@ import org.apache.kafka.common.resource.ResourceType.{GROUP, TOPIC}
 import org.apache.kafka.common.resource.{PatternType, Resource, ResourcePattern, ResourcePatternFilter, ResourceType}
 import org.apache.kafka.common.security.auth.{KafkaPrincipal, SecurityProtocol}
 import org.apache.kafka.security.authorizer.AclEntry.{WILDCARD_HOST, WILDCARD_PRINCIPAL_STRING}
-import org.apache.kafka.server.config.{ServerConfigs, ZkConfigs}
+import org.apache.kafka.server.config.{ServerConfig, ZkConfigs}
 import org.apache.kafka.metadata.authorizer.StandardAuthorizer
 import org.apache.kafka.storage.internals.log.LogConfig
 import org.junit.jupiter.api.Assertions._
@@ -55,13 +55,13 @@ class SaslSslAdminIntegrationTest extends BaseAdminIntegrationTest with SaslSetu
   @BeforeEach
   override def setUp(testInfo: TestInfo): Unit = {
     if (TestInfoUtils.isKRaft(testInfo)) {
-      this.serverConfig.setProperty(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, kraftAuthorizerClassName)
-      this.controllerConfig.setProperty(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, kraftAuthorizerClassName)
+      this.serverConfig.setProperty(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, kraftAuthorizerClassName)
+      this.controllerConfig.setProperty(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, kraftAuthorizerClassName)
       // controllers talk to brokers as User:ANONYMOUS therefore it needs to be super user
       this.serverConfig.setProperty(StandardAuthorizer.SUPER_USERS_CONFIG, kafkaPrincipal.toString + ";" + KafkaPrincipal.ANONYMOUS.toString)
       this.controllerConfig.setProperty(StandardAuthorizer.SUPER_USERS_CONFIG, kafkaPrincipal.toString)
     } else {
-      this.serverConfig.setProperty(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, zkAuthorizerClassName)
+      this.serverConfig.setProperty(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, zkAuthorizerClassName)
       this.serverConfig.setProperty(ZkConfigs.ZK_ENABLE_SECURE_ACLS_CONFIG, "true")
       this.serverConfig.setProperty(AclAuthorizer.SuperUsersProp, kafkaPrincipal.toString)
     }

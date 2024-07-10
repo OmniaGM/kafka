@@ -23,7 +23,7 @@ import org.apache.kafka.common.message.AlterUserScramCredentialsRequestData
 import org.apache.kafka.common.message.AlterUserScramCredentialsResponseData.AlterUserScramCredentialsResult
 import org.apache.kafka.common.protocol.Errors
 import org.apache.kafka.common.requests.{AlterUserScramCredentialsRequest, AlterUserScramCredentialsResponse}
-import org.apache.kafka.server.config.ServerConfigs
+import org.apache.kafka.server.config.ServerConfig
 import org.junit.jupiter.api.Assertions._
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -38,18 +38,18 @@ import scala.jdk.CollectionConverters._
 class AlterUserScramCredentialsRequestNotAuthorizedTest extends BaseRequestTest {
 
   override def brokerPropertyOverrides(properties: Properties): Unit = {
-    properties.put(ServerConfigs.CONTROLLED_SHUTDOWN_ENABLE_CONFIG, "false")
+    properties.put(ServerConfig.CONTROLLED_SHUTDOWN_ENABLE_CONFIG, "false")
     if(isKRaftTest())
-      properties.put(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AlterCredentialsTest.TestStandardAuthorizer].getName)
+      properties.put(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AlterCredentialsTest.TestStandardAuthorizer].getName)
     else {
-      properties.put(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG,  classOf[AlterCredentialsTest.TestAuthorizer].getName)
+      properties.put(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG,  classOf[AlterCredentialsTest.TestAuthorizer].getName)
     }
     properties.put(BrokerSecurityConfigs.PRINCIPAL_BUILDER_CLASS_CONFIG, classOf[AlterCredentialsTest.TestPrincipalBuilderReturningUnauthorized].getName)
   }
 
   override def kraftControllerConfigs(): collection.Seq[Properties] = {
     val controllerConfigs = super.kraftControllerConfigs()
-    controllerConfigs.head.put(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AlterCredentialsTest.TestStandardAuthorizer].getName)
+    controllerConfigs.head.put(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AlterCredentialsTest.TestStandardAuthorizer].getName)
     controllerConfigs.head.put(BrokerSecurityConfigs.PRINCIPAL_BUILDER_CLASS_CONFIG, classOf[AlterCredentialsTest.TestPrincipalBuilderReturningUnauthorized].getName)
     controllerConfigs
   }

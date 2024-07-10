@@ -32,7 +32,7 @@ import org.apache.kafka.common.utils.{AppInfoParser, SecurityUtils}
 import org.apache.kafka.security.authorizer.AclEntry
 import org.apache.kafka.metadata.authorizer.StandardAuthorizer
 import org.apache.kafka.server.authorizer.Authorizer
-import org.apache.kafka.server.config.ServerConfigs
+import org.apache.kafka.server.config.ServerConfig
 import org.apache.log4j.Level
 import org.junit.jupiter.api.Assertions._
 import org.junit.jupiter.api.{AfterEach, BeforeEach, Test, TestInfo}
@@ -117,7 +117,7 @@ class AclCommandTest extends QuorumTestHarness with Logging {
     if (isKRaftTest()) {
       brokerProps.putAll(kraftControllerConfigs().head)
     } else {
-      brokerProps.put(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AclAuthorizer].getName)
+      brokerProps.put(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AclAuthorizer].getName)
       brokerProps.put(AclAuthorizer.SuperUsersProp, "User:ANONYMOUS")
       zkArgs = Array("--authorizer-properties", "zookeeper.connect=" + zkConnect)
     }
@@ -131,7 +131,7 @@ class AclCommandTest extends QuorumTestHarness with Logging {
 
   override protected def kraftControllerConfigs(): Seq[Properties] = {
     val controllerConfig = new Properties
-    controllerConfig.put(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, classOf[StandardAuthorizer].getName)
+    controllerConfig.put(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, classOf[StandardAuthorizer].getName)
     controllerConfig.put(StandardAuthorizer.SUPER_USERS_CONFIG, "User:ANONYMOUS")
     Seq(controllerConfig)
   }

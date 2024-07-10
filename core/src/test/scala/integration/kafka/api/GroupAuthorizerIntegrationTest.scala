@@ -32,7 +32,7 @@ import org.apache.kafka.coordinator.transaction.TransactionLogConfigs
 import org.apache.kafka.coordinator.group.GroupCoordinatorConfig
 import org.apache.kafka.metadata.authorizer.StandardAuthorizer
 import org.apache.kafka.security.authorizer.AclEntry.WILDCARD_HOST
-import org.apache.kafka.server.config.ServerConfigs
+import org.apache.kafka.server.config.ServerConfig
 import org.junit.jupiter.api.Assertions._
 import org.junit.jupiter.api.{BeforeEach, TestInfo}
 import org.junit.jupiter.params.ParameterizedTest
@@ -77,16 +77,16 @@ class GroupAuthorizerIntegrationTest extends BaseRequestTest {
   }
 
   override def brokerPropertyOverrides(properties: Properties): Unit = {
-    properties.put(ServerConfigs.BROKER_ID_CONFIG, brokerId.toString)
+    properties.put(ServerConfig.BROKER_ID_CONFIG, brokerId.toString)
     addNodeProperties(properties)
   }
 
   private def addNodeProperties(properties: Properties): Unit = {
     if (isKRaftTest()) {
-      properties.put(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, classOf[StandardAuthorizer].getName)
+      properties.put(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, classOf[StandardAuthorizer].getName)
       properties.put(StandardAuthorizer.SUPER_USERS_CONFIG, BrokerPrincipal.toString)
     } else {
-      properties.put(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AclAuthorizer].getName)
+      properties.put(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AclAuthorizer].getName)
     }
 
     properties.put(GroupCoordinatorConfig.OFFSETS_TOPIC_PARTITIONS_CONFIG, "1")

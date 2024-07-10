@@ -29,7 +29,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.utils.Bytes;
-import org.apache.kafka.server.config.ServerConfigs;
+import org.apache.kafka.server.config.ServerConfig;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
@@ -84,13 +84,13 @@ public class HighAvailabilityTaskAssignorIntegrationTest {
         new Properties(),
         asList(
             new Properties() {{
-                    setProperty(ServerConfigs.BROKER_RACK_CONFIG, AssignmentTestUtils.RACK_0);
+                    setProperty(ServerConfig.BROKER_RACK_CONFIG, AssignmentTestUtils.RACK_0);
                 }},
             new Properties() {{
-                    setProperty(ServerConfigs.BROKER_RACK_CONFIG, AssignmentTestUtils.RACK_1);
+                    setProperty(ServerConfig.BROKER_RACK_CONFIG, AssignmentTestUtils.RACK_1);
                 }},
             new Properties() {{
-                    setProperty(ServerConfigs.BROKER_RACK_CONFIG, AssignmentTestUtils.RACK_2);
+                    setProperty(ServerConfig.BROKER_RACK_CONFIG, AssignmentTestUtils.RACK_2);
                 }}
         )
     );

@@ -34,7 +34,7 @@ import org.apache.kafka.network.SocketServerConfigs
 import org.apache.kafka.raft.Endpoints
 import org.apache.kafka.raft.QuorumConfig
 import org.apache.kafka.server.ProcessRole
-import org.apache.kafka.server.config.{KRaftConfigs, ServerConfigs, ReplicationConfigs, ServerLogConfigs, ZkConfigs}
+import org.apache.kafka.server.config.{KRaftConfigs, ServerConfig, ReplicationConfigs, ServerLogConfigs, ZkConfigs}
 import org.apache.kafka.server.fault.FaultHandler
 import org.junit.jupiter.api.Assertions._
 import org.junit.jupiter.api.Test
@@ -66,7 +66,7 @@ class RaftManagerTest {
     }
 
     props.setProperty(ZkConfigs.ZK_CONNECT_CONFIG, "localhost:2181")
-    props.setProperty(ServerConfigs.BROKER_ID_CONFIG, nodeId.toString)
+    props.setProperty(ServerConfig.BROKER_ID_CONFIG, nodeId.toString)
     new KafkaConfig(props)
   }
 

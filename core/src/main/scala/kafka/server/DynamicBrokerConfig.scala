@@ -40,7 +40,7 @@ import org.apache.kafka.coordinator.transaction.TransactionLogConfigs
 import org.apache.kafka.network.SocketServerConfigs
 import org.apache.kafka.security.PasswordEncoder
 import org.apache.kafka.server.ProcessRole
-import org.apache.kafka.server.config.{ConfigType, ServerConfigs, ReplicationConfigs, ServerLogConfigs, ServerTopicConfigSynonyms, ZooKeeperInternals}
+import org.apache.kafka.server.config.{ConfigType, ServerConfig, ReplicationConfigs, ServerLogConfigs, ServerTopicConfigSynonyms, ZooKeeperInternals}
 import org.apache.kafka.server.log.remote.storage.RemoteLogManagerConfig
 import org.apache.kafka.server.metrics.{ClientMetricsReceiverPlugin, MetricConfigs}
 import org.apache.kafka.server.telemetry.ClientTelemetry
@@ -99,7 +99,7 @@ object DynamicBrokerConfig {
     DynamicProducerStateManagerConfig ++
     DynamicRemoteLogConfig.ReconfigurableConfigs
 
-  private val ClusterLevelListenerConfigs = Set(SocketServerConfigs.MAX_CONNECTIONS_CONFIG, SocketServerConfigs.MAX_CONNECTION_CREATION_RATE_CONFIG, ServerConfigs.NUM_NETWORK_THREADS_CONFIG)
+  private val ClusterLevelListenerConfigs = Set(SocketServerConfigs.MAX_CONNECTIONS_CONFIG, SocketServerConfigs.MAX_CONNECTION_CREATION_RATE_CONFIG, ServerConfig.NUM_NETWORK_THREADS_CONFIG)
   private val PerBrokerConfigs = (DynamicSecurityConfigs ++ DynamicListenerConfig.ReconfigurableConfigs).diff(
     ClusterLevelListenerConfigs)
   private val ListenerMechanismConfigs = Set(SaslConfigs.SASL_JAAS_CONFIG,
@@ -759,10 +759,10 @@ class DynamicLogConfig(logManager: LogManager, server: KafkaBroker) extends Brok
 
 object DynamicThreadPool {
   val ReconfigurableConfigs = Set(
-    ServerConfigs.NUM_IO_THREADS_CONFIG,
+    ServerConfig.NUM_IO_THREADS_CONFIG,
     ReplicationConfigs.NUM_REPLICA_FETCHERS_CONFIG,
     ServerLogConfigs.NUM_RECOVERY_THREADS_PER_DATA_DIR_CONFIG,
-    ServerConfigs.BACKGROUND_THREADS_CONFIG)
+    ServerConfig.BACKGROUND_THREADS_CONFIG)
 
   def validateReconfiguration(currentConfig: KafkaConfig, newConfig: KafkaConfig): Unit = {
     newConfig.values.forEach { (k, v) =>
@@ -784,10 +784,10 @@ object DynamicThreadPool {
 
   def getValue(config: KafkaConfig, name: String): Int = {
     name match {
-      case ServerConfigs.NUM_IO_THREADS_CONFIG => config.serverConfig.numIoThreads
+      case ServerConfig.NUM_IO_THREADS_CONFIG => config.serverConfig.numIoThreads
       case ReplicationConfigs.NUM_REPLICA_FETCHERS_CONFIG => config.numReplicaFetchers
       case ServerLogConfigs.NUM_RECOVERY_THREADS_PER_DATA_DIR_CONFIG => config.numRecoveryThreadsPerDataDir
-      case ServerConfigs.BACKGROUND_THREADS_CONFIG => config.serverConfig.backgroundThreads
+      case ServerConfig.BACKGROUND_THREADS_CONFIG => config.serverConfig.backgroundThreads
       case n => throw new IllegalStateException(s"Unexpected config $n")
     }
   }
@@ -796,7 +796,7 @@ object DynamicThreadPool {
 class ControllerDynamicThreadPool(controller: ControllerServer) extends BrokerReconfigurable {
 
   override def reconfigurableConfigs: Set[String] = {
-    Set(ServerConfigs.NUM_IO_THREADS_CONFIG)
+    Set(ServerConfig.NUM_IO_THREADS_CONFIG)
   }
 
   override def validateReconfiguration(newConfig: KafkaConfig): Unit = {
@@ -889,7 +889,7 @@ class DynamicMetricsReporters(brokerId: Int, config: KafkaConfig, metrics: Metri
 
 class DynamicMetricReporterState(brokerId: Int, config: KafkaConfig, metrics: Metrics, clusterId: String) {
   private[server] val dynamicConfig = config.dynamicConfig
-  private val propsOverride = Map[String, AnyRef](ServerConfigs.BROKER_ID_CONFIG -> brokerId.toString)
+  private val propsOverride = Map[String, AnyRef](ServerConfig.BROKER_ID_CONFIG -> brokerId.toString)
   private[server] val currentReporters = mutable.Map[String, MetricsReporter]()
   createReporters(config, clusterId, metricsReporterClasses(dynamicConfig.currentKafkaConfig.values()).asJava,
     Collections.emptyMap[String, Object])
@@ -999,7 +999,7 @@ object DynamicListenerConfig {
     SocketServerConfigs.MAX_CONNECTION_CREATION_RATE_CONFIG,
 
     // Network threads
-    ServerConfigs.NUM_NETWORK_THREADS_CONFIG
+    ServerConfig.NUM_NETWORK_THREADS_CONFIG
   )
 }
 

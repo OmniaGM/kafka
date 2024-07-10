@@ -35,7 +35,7 @@ import org.apache.kafka.common.security.auth.{AuthenticationContext, KafkaPrinci
 import org.apache.kafka.common.security.authenticator.DefaultKafkaPrincipalBuilder
 import org.apache.kafka.server.authorizer.{Action, AuthorizableRequestContext, AuthorizationResult}
 import org.apache.kafka.server.common.MetadataVersion
-import org.apache.kafka.server.config.ServerConfigs
+import org.apache.kafka.server.config.ServerConfig
 import org.junit.jupiter.api.{BeforeEach, Test, TestInfo}
 import org.junit.jupiter.api.Assertions._
 import org.junit.jupiter.params.ParameterizedTest
@@ -57,23 +57,23 @@ class AlterUserScramCredentialsRequestTest extends BaseRequestTest {
   @BeforeEach
   override def setUp(testInfo: TestInfo): Unit = {
     if (TestInfoUtils.isKRaft(testInfo)) {
-      this.serverConfig.setProperty(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AlterCredentialsTest.TestStandardAuthorizer].getName)
+      this.serverConfig.setProperty(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AlterCredentialsTest.TestStandardAuthorizer].getName)
       if (testInfo.getDisplayName.contains("quorum=kraft-IBP_3_4")) {
         testMetadataVersion = MetadataVersion.IBP_3_4_IV0
       }
     } else {
-      this.serverConfig.setProperty(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AlterCredentialsTest.TestAuthorizer].getName)
+      this.serverConfig.setProperty(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AlterCredentialsTest.TestAuthorizer].getName)
 
     }
     this.serverConfig.setProperty(BrokerSecurityConfigs.PRINCIPAL_BUILDER_CLASS_CONFIG, classOf[AlterCredentialsTest.TestPrincipalBuilderReturningAuthorized].getName)
-    this.serverConfig.setProperty(ServerConfigs.CONTROLLED_SHUTDOWN_ENABLE_CONFIG, "false")
+    this.serverConfig.setProperty(ServerConfig.CONTROLLED_SHUTDOWN_ENABLE_CONFIG, "false")
 
     super.setUp(testInfo)
   }
 
   override def kraftControllerConfigs(): collection.Seq[Properties] = {
     val controllerConfigs = super.kraftControllerConfigs()
-    controllerConfigs.head.setProperty(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AlterCredentialsTest.TestStandardAuthorizer].getName)
+    controllerConfigs.head.setProperty(ServerConfig.AUTHORIZER_CLASS_NAME_CONFIG, classOf[AlterCredentialsTest.TestStandardAuthorizer].getName)
     controllerConfigs.head.setProperty(BrokerSecurityConfigs.PRINCIPAL_BUILDER_CLASS_CONFIG, classOf[AlterCredentialsTest.TestPrincipalBuilderReturningAuthorized].getName)
     controllerConfigs
   }
