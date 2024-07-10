@@ -747,7 +747,7 @@ class KafkaConfigTest {
   def testDefaultCompressionType(): Unit = {
     val props = TestUtils.createBrokerConfig(0, TestUtils.MockZkConnect, port = 8181)
     val serverConfig = KafkaConfig.fromProps(props)
-    assertEquals(serverConfig.compressionType, "producer")
+    assertEquals(serverConfig.serverConfig.compressionType, "producer")
   }
 
   @Test
@@ -755,7 +755,7 @@ class KafkaConfigTest {
     val props = TestUtils.createBrokerConfig(0, TestUtils.MockZkConnect, port = 8181)
     props.setProperty("compression.type", "gzip")
     val serverConfig = KafkaConfig.fromProps(props)
-    assertEquals(serverConfig.compressionType, "gzip")
+    assertEquals(serverConfig.serverConfig.compressionType, "gzip")
   }
 
   @Test
@@ -1177,13 +1177,13 @@ class KafkaConfigTest {
         case TopicConfig.CLEANUP_POLICY_CONFIG =>
           assertDynamic(kafkaConfigProp, TopicConfig.CLEANUP_POLICY_COMPACT, () => config.logCleanupPolicy)
         case TopicConfig.COMPRESSION_TYPE_CONFIG =>
-          assertDynamic(kafkaConfigProp, "lz4", () => config.compressionType)
+          assertDynamic(kafkaConfigProp, "lz4", () => config.serverConfig.compressionType)
         case TopicConfig.COMPRESSION_GZIP_LEVEL_CONFIG =>
-          assertDynamic(kafkaConfigProp, "5", () => config.gzipCompressionLevel)
+          assertDynamic(kafkaConfigProp, "5", () => config.serverConfig.gzipCompressionLevel)
         case TopicConfig.COMPRESSION_LZ4_LEVEL_CONFIG =>
-          assertDynamic(kafkaConfigProp, "5", () => config.lz4CompressionLevel)
+          assertDynamic(kafkaConfigProp, "5", () => config.serverConfig.lz4CompressionLevel)
         case TopicConfig.COMPRESSION_ZSTD_LEVEL_CONFIG =>
-          assertDynamic(kafkaConfigProp, "5", () => config.zstdCompressionLevel)
+          assertDynamic(kafkaConfigProp, "5", () => config.serverConfig.zstdCompressionLevel)
         case TopicConfig.SEGMENT_BYTES_CONFIG =>
           assertDynamic(kafkaConfigProp, 10000, () => config.logSegmentBytes)
         case TopicConfig.SEGMENT_MS_CONFIG =>
@@ -1201,7 +1201,7 @@ class KafkaConfigTest {
         case TopicConfig.INDEX_INTERVAL_BYTES_CONFIG =>
           assertDynamic(kafkaConfigProp, 10007, () => config.logIndexIntervalBytes)
         case TopicConfig.MAX_MESSAGE_BYTES_CONFIG =>
-          assertDynamic(kafkaConfigProp, 10008, () => config.messageMaxBytes)
+          assertDynamic(kafkaConfigProp, 10008, () => config.serverConfig.messageMaxBytes)
         case TopicConfig.MESSAGE_DOWNCONVERSION_ENABLE_CONFIG =>
           assertDynamic(kafkaConfigProp, false, () => config.logMessageDownConversionEnable)
         case TopicConfig.MESSAGE_TIMESTAMP_DIFFERENCE_MAX_MS_CONFIG =>
@@ -1270,9 +1270,9 @@ class KafkaConfigTest {
     val config = KafkaConfig.fromProps(defaults)
     assertEquals("127.0.0.1:2181", config.zkConnect)
     assertEquals(1234, config.zkConnectionTimeoutMs)
-    assertEquals(false, config.brokerIdGenerationEnable)
-    assertEquals(1, config.maxReservedBrokerId)
-    assertEquals(1, config.brokerId)
+    assertEquals(false, config.serverConfig.brokerIdGenerationEnable)
+    assertEquals(1, config.serverConfig.maxReservedBrokerId)
+    assertEquals(1, config.serverConfig.brokerId)
     assertEquals(Seq("PLAINTEXT://127.0.0.1:1122"), config.effectiveAdvertisedBrokerListeners.map(_.connectionString))
     assertEquals(Map("127.0.0.1" -> 2, "127.0.0.2" -> 3), config.maxConnectionsPerIpOverrides)
     assertEquals(List("/tmp1", "/tmp2"), config.logDirs)
@@ -1690,7 +1690,7 @@ class KafkaConfigTest {
     props.setProperty(ServerConfigs.BROKER_ID_CONFIG, "3")
     props.setProperty(QuorumConfig.QUORUM_VOTERS_CONFIG, "2@localhost:9093")
     val config = KafkaConfig.fromProps(props)
-    assertEquals(3, config.brokerId)
+    assertEquals(3, config.serverConfig.brokerId)
     assertEquals(3, config.nodeId)
     val originals = config.originals()
     assertEquals("3", originals.get(ServerConfigs.BROKER_ID_CONFIG))
@@ -1711,7 +1711,7 @@ class KafkaConfigTest {
     val props = new Properties()
     props.putAll(kraftProps())
     val config = KafkaConfig.fromProps(props)
-    assertEquals(3, config.brokerId)
+    assertEquals(3, config.serverConfig.brokerId)
     assertEquals(3, config.nodeId)
     val originals = config.originals()
     assertEquals("3", originals.get(ServerConfigs.BROKER_ID_CONFIG))

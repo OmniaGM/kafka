@@ -517,7 +517,7 @@ object LogCleaner {
       config.logCleanerDedupeBufferSize,
       config.logCleanerDedupeBufferLoadFactor,
       config.logCleanerIoBufferSize,
-      config.messageMaxBytes,
+      config.serverConfig.messageMaxBytes,
       config.logCleanerIoMaxBytesPerSecond,
       config.logCleanerBackoffMs,
       config.logCleanerEnable)

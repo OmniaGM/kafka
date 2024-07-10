@@ -63,7 +63,7 @@ class UpdateFeaturesTest extends BaseRequestTest {
     })
 
     // Wait until updates to all BrokerZNode supported features propagate to the controller.
-    val brokerIds = targetServers.map(s => s.config.brokerId)
+    val brokerIds = targetServers.map(s => s.config.serverConfig.brokerId)
     waitUntilTrue(
       () => servers.exists(s => {
         if (s.kafkaController.isActive) {

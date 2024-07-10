@@ -53,12 +53,12 @@ object TransactionCoordinator {
       config.transactionTopicMinISR,
       config.transactionAbortTimedOutTransactionCleanupIntervalMs,
       config.transactionRemoveExpiredTransactionalIdCleanupIntervalMs,
-      config.requestTimeoutMs)
+      config.serverConfig.requestTimeoutMs)
 
-    val txnStateManager = new TransactionStateManager(config.brokerId, scheduler, replicaManager, txnConfig,
+    val txnStateManager = new TransactionStateManager(config.serverConfig.brokerId, scheduler, replicaManager, txnConfig,
       time, metrics)
 
-    val logContext = new LogContext(s"[TransactionCoordinator id=${config.brokerId}] ")
+    val logContext = new LogContext(s"[TransactionCoordinator id=${config.serverConfig.brokerId}] ")
     val txnMarkerChannelManager = TransactionMarkerChannelManager(config, metrics, metadataCache, txnStateManager,
       time, logContext)
 

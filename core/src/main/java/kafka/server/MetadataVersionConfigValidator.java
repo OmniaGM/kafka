@@ -33,7 +33,7 @@ public class MetadataVersionConfigValidator implements MetadataPublisher {
             KafkaConfig config,
             FaultHandler faultHandler
     ) {
-        int id = config.brokerId();
+        int id = config.serverConfig().brokerId();
         this.name = "MetadataVersionPublisher(id=" + id + ")";
         this.config = config;
         this.faultHandler = faultHandler;

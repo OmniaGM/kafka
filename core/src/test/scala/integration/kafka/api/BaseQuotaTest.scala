@@ -83,8 +83,8 @@ abstract class BaseQuotaTest extends IntegrationTestHarness {
 
     val numPartitions = 1
     val leaders = createTopic(topic1, numPartitions, brokerCount, adminClientConfig = adminClientConfig)
-    leaderNode = if (leaders(0) == brokers.head.config.brokerId) brokers.head else brokers(1)
-    followerNode = if (leaders(0) != brokers.head.config.brokerId) brokers.head else brokers(1)
+    leaderNode = if (leaders(0) == brokers.head.config.serverConfig.brokerId) brokers.head else brokers(1)
+    followerNode = if (leaders(0) != brokers.head.config.serverConfig.brokerId) brokers.head else brokers(1)
     quotaTestClients = createQuotaTestClients(topic1, leaderNode)
   }
 

@@ -260,7 +260,7 @@ class LogRecoveryTest extends QuorumTestHarness {
     def leaderExists: Option[Int] = {
       brokers.find { broker =>
         broker.replicaManager.onlinePartition(tp).exists(_.leaderLogIfLocal.isDefined)
-      }.map(_.config.brokerId)
+      }.map(_.config.serverConfig.brokerId)
     }
 
     waitUntilTrue(() => leaderExists.isDefined,

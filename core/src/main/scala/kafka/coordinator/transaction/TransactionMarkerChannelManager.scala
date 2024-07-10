@@ -84,15 +84,15 @@ object TransactionMarkerChannelManager {
     val networkClient = new NetworkClient(
       selector,
       new ManualMetadataUpdater(),
-      s"broker-${config.brokerId}-txn-marker-sender",
+      s"broker-${config.serverConfig.brokerId}-txn-marker-sender",
       1,
       50,
       50,
       Selectable.USE_DEFAULT_BUFFER_SIZE,
       config.socketReceiveBufferBytes,
-      config.requestTimeoutMs,
-      config.connectionSetupTimeoutMs,
-      config.connectionSetupTimeoutMaxMs,
+      config.serverConfig.requestTimeoutMs,
+      config.serverConfig.connectionSetupTimeoutMs,
+      config.serverConfig.connectionSetupTimeoutMaxMs,
       time,
       false,
       new ApiVersions,
@@ -163,12 +163,12 @@ class TransactionMarkerChannelManager(
   networkClient: NetworkClient,
   txnStateManager: TransactionStateManager,
   time: Time
-) extends InterBrokerSendThread("TxnMarkerSenderThread-" + config.brokerId, networkClient, config.requestTimeoutMs, time)
+) extends InterBrokerSendThread("TxnMarkerSenderThread-" + config.serverConfig.brokerId, networkClient, config.serverConfig.requestTimeoutMs, time)
   with Logging {
 
   private val metricsGroup = new KafkaMetricsGroup(this.getClass)
 
-  this.logIdent = "[Transaction Marker Channel Manager " + config.brokerId + "]: "
+  this.logIdent = "[Transaction Marker Channel Manager " + config.serverConfig.brokerId + "]: "
 
   private val interBrokerListenerName: ListenerName = config.interBrokerListenerName
 

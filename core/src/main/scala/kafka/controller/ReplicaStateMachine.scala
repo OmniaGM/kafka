@@ -101,7 +101,7 @@ class ZkReplicaStateMachine(config: KafkaConfig,
                             controllerBrokerRequestBatch: ControllerBrokerRequestBatch)
   extends ReplicaStateMachine(controllerContext) with Logging {
 
-  private val controllerId = config.brokerId
+  private val controllerId = config.serverConfig.brokerId
   this.logIdent = s"[ReplicaStateMachine controllerId=$controllerId] "
 
   override def handleStateChanges(replicas: Seq[PartitionAndReplica], targetState: ReplicaState): Unit = {

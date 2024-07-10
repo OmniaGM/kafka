@@ -195,13 +195,13 @@ class TransactionsBounceTest extends IntegrationTestHarness {
   private class BounceScheduler extends ShutdownableThread("daemon-broker-bouncer", false) {
     override def doWork(): Unit = {
       for (server <- brokers) {
-        trace("Shutting down server : %s".format(server.config.brokerId))
+        trace("Shutting down server : %s".format(server.config.serverConfig.brokerId))
         server.shutdown()
         server.awaitShutdown()
         Thread.sleep(500)
-        trace("Server %s shut down. Starting it up again.".format(server.config.brokerId))
+        trace("Server %s shut down. Starting it up again.".format(server.config.serverConfig.brokerId))
         server.startup()
-        trace("Restarted server: %s".format(server.config.brokerId))
+        trace("Restarted server: %s".format(server.config.serverConfig.brokerId))
         Thread.sleep(500)
       }
 

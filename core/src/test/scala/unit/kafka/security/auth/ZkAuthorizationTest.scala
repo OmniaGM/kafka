@@ -18,7 +18,6 @@
 package kafka.security.auth
 
 import java.nio.charset.StandardCharsets
-
 import kafka.admin.ZkSecurityMigrator
 import kafka.server.QuorumTestHarness
 import kafka.utils.{Logging, TestUtils}
@@ -39,6 +38,7 @@ import org.apache.kafka.common.utils.Time
 import org.apache.kafka.server.common.MetadataVersion
 import org.apache.zookeeper.client.ZKClientConfig
 
+import java.util.Optional
 import scala.jdk.CollectionConverters._
 import scala.collection.Seq
 
@@ -135,7 +135,7 @@ class ZkAuthorizationTest extends QuorumTestHarness with Logging {
   }
 
   private def createBrokerInfo(id: Int, host: String, port: Int, securityProtocol: SecurityProtocol,
-                               rack: Option[String] = None): BrokerInfo =
+                               rack: Optional[String] = Optional.empty()): BrokerInfo =
     BrokerInfo(Broker(id, Seq(new EndPoint(host, port, ListenerName.forSecurityProtocol
     (securityProtocol), securityProtocol)), rack = rack), MetadataVersion.latestTesting, jmxPort = port + 10)
 

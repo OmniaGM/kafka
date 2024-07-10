@@ -301,7 +301,7 @@ public class ReplicaFetcherThreadBenchmark {
                                   Partition> partitions) {
             super("name",
                     new RemoteLeaderEndPoint(
-                            String.format("[ReplicaFetcher replicaId=%d, leaderId=%d, fetcherId=%d", config.brokerId(), 3, 3),
+                            String.format("[ReplicaFetcher replicaId=%d, leaderId=%d, fetcherId=%d", config.serverConfig().brokerId(), 3, 3),
                             new BrokerBlockingSender(
                                     new BrokerEndPoint(3, "host", 3000),
                                     config,
@@ -309,10 +309,10 @@ public class ReplicaFetcherThreadBenchmark {
                                     Time.SYSTEM,
                                     3,
                                     String.format("broker-%d-fetcher-%d", 3, 3),
-                                    new LogContext(String.format("[ReplicaFetcher replicaId=%d, leaderId=%d, fetcherId=%d", config.brokerId(), 3, 3))
+                                    new LogContext(String.format("[ReplicaFetcher replicaId=%d, leaderId=%d, fetcherId=%d", config.serverConfig().brokerId(), 3, 3))
                             ),
                             new FetchSessionHandler(
-                                    new LogContext(String.format("[ReplicaFetcher replicaId=%d, leaderId=%d, fetcherId=%d", config.brokerId(), 3, 3)), 3),
+                                    new LogContext(String.format("[ReplicaFetcher replicaId=%d, leaderId=%d, fetcherId=%d", config.serverConfig().brokerId(), 3, 3)), 3),
                             config,
                             replicaManager,
                             replicaQuota,
@@ -348,7 +348,7 @@ public class ReplicaFetcherThreadBenchmark {
                     new FailedPartitions(),
                     replicaManager,
                     replicaQuota,
-                    String.format("[ReplicaFetcher replicaId=%d, leaderId=%d, fetcherId=%d", config.brokerId(), 3, 3),
+                    String.format("[ReplicaFetcher replicaId=%d, leaderId=%d, fetcherId=%d", config.serverConfig().brokerId(), 3, 3),
                     config::interBrokerProtocolVersion
             );
 

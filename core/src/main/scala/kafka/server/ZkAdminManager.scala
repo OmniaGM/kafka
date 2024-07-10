@@ -73,9 +73,9 @@ class ZkAdminManager(val config: KafkaConfig,
                      val metadataCache: MetadataCache,
                      val zkClient: KafkaZkClient) extends Logging {
 
-  this.logIdent = "[Admin Manager on Broker " + config.brokerId + "]: "
+  this.logIdent = "[Admin Manager on Broker " + config.serverConfig.brokerId + "]: "
 
-  private val topicPurgatory = DelayedOperationPurgatory[DelayedOperation]("topic", config.brokerId)
+  private val topicPurgatory = DelayedOperationPurgatory[DelayedOperation]("topic", config.serverConfig.brokerId)
   private val adminZkClient = new AdminZkClient(zkClient, Some(config))
   private val configHelper = new ConfigHelper(metadataCache, config, new ZkConfigRepository(adminZkClient))
 
@@ -485,8 +485,8 @@ class ZkAdminManager(val config: KafkaConfig,
       None
     else {
       val id = resourceNameToBrokerId(resource.name)
-      if (id != this.config.brokerId)
-        throw new InvalidRequestException(s"Unexpected broker id, expected ${this.config.brokerId}, but received ${resource.name}")
+      if (id != this.config.serverConfig.brokerId)
+        throw new InvalidRequestException(s"Unexpected broker id, expected ${this.config.serverConfig.brokerId}, but received ${resource.name}")
       Some(id)
     }
   }

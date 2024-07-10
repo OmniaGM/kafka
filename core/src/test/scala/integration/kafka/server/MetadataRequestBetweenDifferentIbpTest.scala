@@ -73,7 +73,7 @@ class MetadataRequestBetweenDifferentIbpTest extends BaseRequestTest {
   }
 
   private def ensureControllerIn(brokerIds: Seq[Int]): Unit = {
-    while (!brokerIds.contains(controllerSocketServer.config.brokerId)) {
+    while (!brokerIds.contains(controllerSocketServer.config.serverConfig.brokerId)) {
       zkClient.deleteController(ZkVersion.MatchAnyVersion)
       TestUtils.waitUntilControllerElected(zkClient)
     }

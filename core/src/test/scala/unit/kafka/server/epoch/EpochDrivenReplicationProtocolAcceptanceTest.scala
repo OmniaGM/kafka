@@ -272,8 +272,8 @@ class EpochDrivenReplicationProtocolAcceptanceTest extends QuorumTestHarness wit
     //Now invoke the fast leader change bug
     (0 until 5).foreach { i =>
       val leaderId = zkClient.getLeaderForPartition(new TopicPartition(topic, 0)).get
-      val leader = brokers.filter(_.config.brokerId == leaderId)(0)
-      val follower = brokers.filter(_.config.brokerId != leaderId)(0)
+      val leader = brokers.filter(_.config.serverConfig.brokerId == leaderId)(0)
+      val follower = brokers.filter(_.config.serverConfig.brokerId != leaderId)(0)
 
       producer.send(new ProducerRecord(topic, 0, null, msg)).get
       messagesWritten += 1
@@ -376,9 +376,9 @@ class EpochDrivenReplicationProtocolAcceptanceTest extends QuorumTestHarness wit
   }
 
   private def log(leader: KafkaServer, follower: KafkaServer): Unit = {
-    info(s"Bounce complete for follower ${follower.config.brokerId}")
-    info(s"Leader: leo${leader.config.brokerId}: " + getLog(leader, 0).logEndOffset + " cache: " + epochCache(leader).epochEntries)
-    info(s"Follower: leo${follower.config.brokerId}: " + getLog(follower, 0).logEndOffset + " cache: " + epochCache(follower).epochEntries)
+    info(s"Bounce complete for follower ${follower.config.serverConfig.brokerId}")
+    info(s"Leader: leo${leader.config.serverConfig.brokerId}: " + getLog(leader, 0).logEndOffset + " cache: " + epochCache(leader).epochEntries)
+    info(s"Follower: leo${follower.config.serverConfig.brokerId}: " + getLog(follower, 0).logEndOffset + " cache: " + epochCache(follower).epochEntries)
   }
 
   private def waitForLogsToMatch(b1: KafkaServer, b2: KafkaServer, partition: Int = 0): Unit = {
@@ -455,13 +455,13 @@ class EpochDrivenReplicationProtocolAcceptanceTest extends QuorumTestHarness wit
   private def leader: KafkaServer = {
     assertEquals(2, brokers.size)
     val leaderId = zkClient.getLeaderForPartition(new TopicPartition(topic, 0)).get
-    brokers.filter(_.config.brokerId == leaderId).head
+    brokers.filter(_.config.serverConfig.brokerId == leaderId).head
   }
 
   private def follower: KafkaServer = {
     assertEquals(2, brokers.size)
     val leader = zkClient.getLeaderForPartition(new TopicPartition(topic, 0)).get
-    brokers.filter(_.config.brokerId != leader).head
+    brokers.filter(_.config.serverConfig.brokerId != leader).head
   }
 
   private def createBrokerForId(id: Int, enableUncleanLeaderElection: Boolean = false): KafkaServer = {

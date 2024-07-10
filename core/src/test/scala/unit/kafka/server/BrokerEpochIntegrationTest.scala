@@ -73,7 +73,7 @@ class BrokerEpochIntegrationTest extends QuorumTestHarness {
     assertEquals(brokerAndEpochs.size, servers.size)
     brokerAndEpochs.foreach {
       case (broker, epoch) =>
-        val brokerServer = servers.find(e => e.config.brokerId == broker.id)
+        val brokerServer = servers.find(e => e.config.serverConfig.brokerId == broker.id)
         assertTrue(brokerServer.isDefined)
         assertEquals(epoch, brokerServer.get.kafkaController.brokerEpoch)
     }
@@ -82,7 +82,7 @@ class BrokerEpochIntegrationTest extends QuorumTestHarness {
   @Test
   def testControllerBrokerEpochCacheMatchesWithZk(): Unit = {
     val controller = getController
-    val otherBroker = servers.find(e => e.config.brokerId != controller.config.brokerId).get
+    val otherBroker = servers.find(e => e.config.serverConfig.brokerId != controller.config.serverConfig.brokerId).get
 
     // Broker epochs cache matches with zk in steady state
     checkControllerBrokerEpochsCacheMatchesWithZk(controller.kafkaController.controllerContext)
@@ -125,7 +125,7 @@ class BrokerEpochIntegrationTest extends QuorumTestHarness {
     val securityProtocol = SecurityProtocol.PLAINTEXT
     val listenerName = ListenerName.forSecurityProtocol(securityProtocol)
     val brokerAndEpochs = servers.map(s =>
-      (new Broker(s.config.brokerId, "localhost", TestUtils.boundPort(s), listenerName, securityProtocol),
+      (new Broker(s.config.serverConfig.brokerId, "localhost", TestUtils.boundPort(s), listenerName, securityProtocol),
         s.kafkaController.brokerEpoch)).toMap
     val nodes = brokerAndEpochs.keys.map(_.node(listenerName))
 
@@ -199,7 +199,7 @@ class BrokerEpochIntegrationTest extends QuorumTestHarness {
           new UpdateMetadataBroker()
             .setId(broker.id)
             .setEndpoints(endpoints.asJava)
-            .setRack(broker.rack.orNull)
+            .setRack(broker.rack.orElse(null))
         }.toBuffer
         val requestBuilder = new UpdateMetadataRequest.Builder(
           ApiKeys.UPDATE_METADATA.latestVersion, controllerId, controllerEpoch,
@@ -251,7 +251,7 @@ class BrokerEpochIntegrationTest extends QuorumTestHarness {
 
   private def getController: KafkaServer = {
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    servers.filter(s => s.config.brokerId == controllerId).head
+    servers.filter(s => s.config.serverConfig.brokerId == controllerId).head
   }
 
   private def checkControllerBrokerEpochsCacheMatchesWithZk(controllerContext: ControllerContext): Unit = {

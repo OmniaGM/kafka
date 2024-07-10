@@ -243,7 +243,7 @@ class LeaderEpochIntegrationTest extends QuorumTestHarness with Logging {
   }
 
   private def sender(from: KafkaBroker, to: KafkaBroker): BlockingSend = {
-    val node = from.metadataCache.getAliveBrokerNode(to.config.brokerId,
+    val node = from.metadataCache.getAliveBrokerNode(to.config.serverConfig.brokerId,
       from.config.interBrokerListenerName).get
     val endPoint = new BrokerEndPoint(node.id(), node.host(), node.port())
     new BrokerBlockingSender(endPoint, from.config, new Metrics(), Time.SYSTEM, 42, "TestFetcher", new LogContext())

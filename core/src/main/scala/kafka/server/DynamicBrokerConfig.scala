@@ -228,9 +228,9 @@ class DynamicBrokerConfig(private val kafkaConfig: KafkaConfig) extends Logging 
     zkClientOpt.foreach { zkClient =>
       val adminZkClient = new AdminZkClient(zkClient)
       updateDefaultConfig(adminZkClient.fetchEntityConfig(ConfigType.BROKER, ZooKeeperInternals.DEFAULT_STRING), false)
-      val props = adminZkClient.fetchEntityConfig(ConfigType.BROKER, kafkaConfig.brokerId.toString)
+      val props = adminZkClient.fetchEntityConfig(ConfigType.BROKER, kafkaConfig.serverConfig.brokerId.toString)
       val brokerConfig = maybeReEncodePasswords(props, adminZkClient)
-      updateBrokerConfig(kafkaConfig.brokerId, brokerConfig)
+      updateBrokerConfig(kafkaConfig.serverConfig.brokerId, brokerConfig)
     }
   }
 
@@ -263,7 +263,7 @@ class DynamicBrokerConfig(private val kafkaConfig: KafkaConfig) extends Logging 
       case _ =>
     }
     addReconfigurable(kafkaServer.kafkaYammerMetrics)
-    addReconfigurable(new DynamicMetricsReporters(kafkaConfig.brokerId, kafkaServer.config, kafkaServer.metrics, kafkaServer.clusterId))
+    addReconfigurable(new DynamicMetricsReporters(kafkaConfig.serverConfig.brokerId, kafkaServer.config, kafkaServer.metrics, kafkaServer.clusterId))
     addReconfigurable(new DynamicClientQuotaCallback(kafkaServer.quotaManagers, kafkaServer.config))
 
     addBrokerReconfigurable(new BrokerDynamicThreadPool(kafkaServer))
@@ -461,7 +461,7 @@ class DynamicBrokerConfig(private val kafkaConfig: KafkaConfig) extends Logging 
             decoded.foreach(value => props.put(configName, passwordEncoder.encode(new Password(value))))
           }
         }
-        adminZkClient.changeBrokerConfig(Some(kafkaConfig.brokerId), props)
+        adminZkClient.changeBrokerConfig(Some(kafkaConfig.serverConfig.brokerId), props)
       }
     }
     props
@@ -784,10 +784,10 @@ object DynamicThreadPool {
 
   def getValue(config: KafkaConfig, name: String): Int = {
     name match {
-      case ServerConfigs.NUM_IO_THREADS_CONFIG => config.numIoThreads
+      case ServerConfigs.NUM_IO_THREADS_CONFIG => config.serverConfig.numIoThreads
       case ReplicationConfigs.NUM_REPLICA_FETCHERS_CONFIG => config.numReplicaFetchers
       case ServerLogConfigs.NUM_RECOVERY_THREADS_PER_DATA_DIR_CONFIG => config.numRecoveryThreadsPerDataDir
-      case ServerConfigs.BACKGROUND_THREADS_CONFIG => config.backgroundThreads
+      case ServerConfigs.BACKGROUND_THREADS_CONFIG => config.serverConfig.backgroundThreads
       case n => throw new IllegalStateException(s"Unexpected config $n")
     }
   }
@@ -804,8 +804,8 @@ class ControllerDynamicThreadPool(controller: ControllerServer) extends BrokerRe
   }
 
   override def reconfigure(oldConfig: KafkaConfig, newConfig: KafkaConfig): Unit = {
-    if (newConfig.numIoThreads != oldConfig.numIoThreads)
-      controller.controllerApisHandlerPool.resizeThreadPool(newConfig.numIoThreads)
+    if (newConfig.serverConfig.numIoThreads != oldConfig.serverConfig.numIoThreads)
+      controller.controllerApisHandlerPool.resizeThreadPool(newConfig.serverConfig.numIoThreads)
   }
 }
 
@@ -820,14 +820,14 @@ class BrokerDynamicThreadPool(server: KafkaBroker) extends BrokerReconfigurable 
   }
 
   override def reconfigure(oldConfig: KafkaConfig, newConfig: KafkaConfig): Unit = {
-    if (newConfig.numIoThreads != oldConfig.numIoThreads)
-      server.dataPlaneRequestHandlerPool.resizeThreadPool(newConfig.numIoThreads)
+    if (newConfig.serverConfig.numIoThreads != oldConfig.serverConfig.numIoThreads)
+      server.dataPlaneRequestHandlerPool.resizeThreadPool(newConfig.serverConfig.numIoThreads)
     if (newConfig.numReplicaFetchers != oldConfig.numReplicaFetchers)
       server.replicaManager.resizeFetcherThreadPool(newConfig.numReplicaFetchers)
     if (newConfig.numRecoveryThreadsPerDataDir != oldConfig.numRecoveryThreadsPerDataDir)
       server.logManager.resizeRecoveryThreadPool(newConfig.numRecoveryThreadsPerDataDir)
-    if (newConfig.backgroundThreads != oldConfig.backgroundThreads)
-      server.kafkaScheduler.resizeThreadPool(newConfig.backgroundThreads)
+    if (newConfig.serverConfig.backgroundThreads != oldConfig.serverConfig.backgroundThreads)
+      server.kafkaScheduler.resizeThreadPool(newConfig.serverConfig.backgroundThreads)
   }
 }
 

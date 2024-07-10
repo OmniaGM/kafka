@@ -197,7 +197,7 @@ class UncleanLeaderElectionTest extends QuorumTestHarness {
     assertEquals(List("first"), consumeAllMessages(topic, 1))
 
     // shutdown follower server
-    brokers.filter(broker => broker.config.brokerId == followerId).map(broker => shutdownBroker(broker))
+    brokers.filter(broker => broker.config.serverConfig.brokerId == followerId).map(broker => shutdownBroker(broker))
 
     produceMessage(brokers, topic, "second")
     assertEquals(List("first", "second"), consumeAllMessages(topic, 2))
@@ -208,8 +208,8 @@ class UncleanLeaderElectionTest extends QuorumTestHarness {
     assert(uncleanLeaderElectionsPerSec == 0)
 
     // shutdown leader and then restart follower
-    brokers.filter(_.config.brokerId == leaderId).map(shutdownBroker)
-    val followerBroker = brokers.find(_.config.brokerId == followerId).get
+    brokers.filter(_.config.serverConfig.brokerId == leaderId).map(shutdownBroker)
+    val followerBroker = brokers.find(_.config.serverConfig.brokerId == followerId).get
     followerBroker.startup()
 
     // wait until new leader is (uncleanly) elected
@@ -239,7 +239,7 @@ class UncleanLeaderElectionTest extends QuorumTestHarness {
     assertEquals(List("first"), consumeAllMessages(topic, 1))
 
     // shutdown follower server
-    brokers.filter(broker => broker.config.brokerId == followerId).map(broker => shutdownBroker(broker))
+    brokers.filter(broker => broker.config.serverConfig.brokerId == followerId).map(broker => shutdownBroker(broker))
 
     produceMessage(brokers, topic, "second")
     assertEquals(List("first", "second"), consumeAllMessages(topic, 2))
@@ -250,8 +250,8 @@ class UncleanLeaderElectionTest extends QuorumTestHarness {
     assert(uncleanLeaderElectionsPerSec == 0)
 
     // shutdown leader and then restart follower
-    brokers.filter(_.config.brokerId == leaderId).map(shutdownBroker)
-    val followerServer = brokers.find(_.config.brokerId == followerId).get
+    brokers.filter(_.config.serverConfig.brokerId == leaderId).map(shutdownBroker)
+    val followerServer = brokers.find(_.config.serverConfig.brokerId == followerId).get
     followerServer.startup()
 
     // verify that unclean election to non-ISR follower does not occur
@@ -266,7 +266,7 @@ class UncleanLeaderElectionTest extends QuorumTestHarness {
     assertEquals(List.empty[String], consumeAllMessages(topic, 0))
 
     // restart leader temporarily to send a successfully replicated message
-    brokers.find(_.config.brokerId == leaderId).get.startup()
+    brokers.find(_.config.serverConfig.brokerId == leaderId).get.startup()
     awaitLeaderChange(brokers, topicPartition, expectedLeaderOpt = Some(leaderId))
 
     produceMessage(brokers, topic, "third")
@@ -276,7 +276,7 @@ class UncleanLeaderElectionTest extends QuorumTestHarness {
       partitionInfoOpt.isDefined && partitionInfoOpt.get.isr.contains(followerId)
     }, "Inconsistent metadata after first server startup")
 
-    brokers.filter(_.config.brokerId == leaderId).map(shutdownBroker)
+    brokers.filter(_.config.serverConfig.brokerId == leaderId).map(shutdownBroker)
 
     // verify clean leader transition to ISR follower
     awaitLeaderChange(brokers, topicPartition, expectedLeaderOpt = Some(followerId))
@@ -331,7 +331,7 @@ class UncleanLeaderElectionTest extends QuorumTestHarness {
     assertEquals(List("first"), consumeAllMessages(topic, 1))
 
     // shutdown follower server
-    brokers.filter(broker => broker.config.brokerId == followerId).map(broker => shutdownBroker(broker))
+    brokers.filter(broker => broker.config.serverConfig.brokerId == followerId).map(broker => shutdownBroker(broker))
 
     produceMessage(brokers, topic, "second")
     assertEquals(List("first", "second"), consumeAllMessages(topic, 2))
@@ -342,8 +342,8 @@ class UncleanLeaderElectionTest extends QuorumTestHarness {
     assert(uncleanLeaderElectionsPerSec == 0)
 
     // shutdown leader and then restart follower
-    brokers.filter(_.config.brokerId == leaderId).map(shutdownBroker)
-    val followerBroker = brokers.find(_.config.brokerId == followerId).get
+    brokers.filter(_.config.serverConfig.brokerId == leaderId).map(shutdownBroker)
+    val followerBroker = brokers.find(_.config.serverConfig.brokerId == followerId).get
     followerBroker.startup()
 
     // leader should not change

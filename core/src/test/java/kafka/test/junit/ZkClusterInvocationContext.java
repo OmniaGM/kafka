@@ -236,7 +236,7 @@ public class ZkClusterInvocationContext implements TestTemplateInvocationContext
 
         private KafkaServer findBrokerOrThrow(int brokerId) {
             return brokers().values().stream()
-                .filter(server -> server.config().brokerId() == brokerId)
+                .filter(server -> server.config().serverConfig().brokerId() == brokerId)
                 .map(s -> (KafkaServer) s)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown brokerId " + brokerId));
@@ -250,7 +250,7 @@ public class ZkClusterInvocationContext implements TestTemplateInvocationContext
         @Override
         public Map<Integer, KafkaBroker> brokers() {
             return JavaConverters.asJavaCollection(clusterReference.get().servers())
-                    .stream().collect(Collectors.toMap(s -> s.config().brokerId(), s -> s));
+                    .stream().collect(Collectors.toMap(s -> s.config().serverConfig().brokerId(), s -> s));
         }
     }
 

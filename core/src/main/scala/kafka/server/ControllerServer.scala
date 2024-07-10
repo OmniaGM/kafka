@@ -174,7 +174,7 @@ class ControllerServer(
 
       val apiVersionManager = new SimpleApiVersionManager(
         ListenerType.CONTROLLER,
-        config.unstableApiVersionsEnabled,
+        config.serverConfig.unstableApiVersionsEnabled,
         config.migrationEnabled,
         () => featuresPublisher.features()
       )
@@ -217,7 +217,7 @@ class ControllerServer(
         startupDeadline, time)
       val controllerNodes = QuorumConfig.voterConnectionsToNodes(voterConnections)
       val quorumFeatures = new QuorumFeatures(config.nodeId,
-        QuorumFeatures.defaultFeatureMap(config.unstableFeatureVersionsEnabled),
+        QuorumFeatures.defaultFeatureMap(config.serverConfig.unstableFeatureVersionsEnabled),
         controllerNodes.asScala.map(node => Integer.valueOf(node.id())).asJava)
 
       val delegationTokenKeyString = {
@@ -330,7 +330,7 @@ class ControllerServer(
         socketServer.dataPlaneRequestChannel,
         controllerApis,
         time,
-        config.numIoThreads,
+        config.serverConfig.numIoThreads,
         s"${DataPlaneAcceptor.MetricPrefix}RequestHandlerAvgIdlePercent",
         DataPlaneAcceptor.ThreadPrefix,
         "controller")
@@ -349,7 +349,7 @@ class ControllerServer(
         clusterId,
         time,
         s"controller-${config.nodeId}-",
-        QuorumFeatures.defaultFeatureMap(config.unstableFeatureVersionsEnabled),
+        QuorumFeatures.defaultFeatureMap(config.serverConfig.unstableFeatureVersionsEnabled),
         config.migrationEnabled,
         incarnationId,
         listenerInfo)

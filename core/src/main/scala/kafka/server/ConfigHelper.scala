@@ -114,17 +114,17 @@ class ConfigHelper(metadataCache: MetadataCache, config: KafkaConfig, configRepo
             if (resource.resourceName == null || resource.resourceName.isEmpty)
               createResponseConfig(config.dynamicConfig.currentDynamicDefaultConfigs,
                 createBrokerConfigEntry(perBrokerConfig = false, includeSynonyms, includeDocumentation))
-            else if (resourceNameToBrokerId(resource.resourceName) == config.brokerId)
+            else if (resourceNameToBrokerId(resource.resourceName) == config.serverConfig.brokerId)
               createResponseConfig(allConfigs(config),
                 createBrokerConfigEntry(perBrokerConfig = true, includeSynonyms, includeDocumentation))
             else
-              throw new InvalidRequestException(s"Unexpected broker id, expected ${config.brokerId} or empty string, but received ${resource.resourceName}")
+              throw new InvalidRequestException(s"Unexpected broker id, expected ${config.serverConfig.brokerId} or empty string, but received ${resource.resourceName}")
 
           case ConfigResource.Type.BROKER_LOGGER =>
             if (resource.resourceName == null || resource.resourceName.isEmpty)
               throw new InvalidRequestException("Broker id must not be empty")
-            else if (resourceNameToBrokerId(resource.resourceName) != config.brokerId)
-              throw new InvalidRequestException(s"Unexpected broker id, expected ${config.brokerId} but received ${resource.resourceName}")
+            else if (resourceNameToBrokerId(resource.resourceName) != config.serverConfig.brokerId)
+              throw new InvalidRequestException(s"Unexpected broker id, expected ${config.serverConfig.brokerId} but received ${resource.resourceName}")
             else
               createResponseConfig(Log4jController.loggers,
                 (name, value) => new DescribeConfigsResponseData.DescribeConfigsResourceResult().setName(name)

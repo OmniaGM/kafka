@@ -24,7 +24,7 @@ object ReplicationQuotaUtils {
   def checkThrottleConfigRemovedFromZK(adminZkClient: AdminZkClient, topic: String, servers: Seq[KafkaServer]): Unit = {
     TestUtils.waitUntilTrue(() => {
       val hasRateProp = servers.forall { server =>
-        val brokerConfig = adminZkClient.fetchEntityConfig(ConfigType.BROKER, server.config.brokerId.toString)
+        val brokerConfig = adminZkClient.fetchEntityConfig(ConfigType.BROKER, server.config.serverConfig.brokerId.toString)
         brokerConfig.contains(QuotaConfigs.LEADER_REPLICATION_THROTTLED_RATE_CONFIG) ||
           brokerConfig.contains(QuotaConfigs.FOLLOWER_REPLICATION_THROTTLED_RATE_CONFIG)
       }
@@ -39,7 +39,7 @@ object ReplicationQuotaUtils {
     TestUtils.waitUntilTrue(() => {
       //Check for limit in ZK
       val brokerConfigAvailable = servers.forall { server =>
-        val configInZk = adminZkClient.fetchEntityConfig(ConfigType.BROKER, server.config.brokerId.toString)
+        val configInZk = adminZkClient.fetchEntityConfig(ConfigType.BROKER, server.config.serverConfig.brokerId.toString)
         val zkLeaderRate = configInZk.getProperty(QuotaConfigs.LEADER_REPLICATION_THROTTLED_RATE_CONFIG)
         val zkFollowerRate = configInZk.getProperty(QuotaConfigs.FOLLOWER_REPLICATION_THROTTLED_RATE_CONFIG)
         zkLeaderRate != null && expectedThrottleRate == zkLeaderRate.toLong &&

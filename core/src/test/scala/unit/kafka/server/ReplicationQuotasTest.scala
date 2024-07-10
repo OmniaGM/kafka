@@ -270,7 +270,7 @@ class ReplicationQuotasTest extends QuorumTestHarness {
     }, s"Offsets did not match for partition $partitionId on broker $brokerId", 60000)
   }
 
-  private def brokerFor(id: Int): KafkaBroker = brokers.filter(_.config.brokerId == id).head
+  private def brokerFor(id: Int): KafkaBroker = brokers.filter(_.config.serverConfig.brokerId == id).head
 
   def createBrokers(brokerIds: Seq[Int]): Unit = {
     brokerIds.foreach { id =>

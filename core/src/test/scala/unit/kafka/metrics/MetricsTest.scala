@@ -185,7 +185,7 @@ class MetricsTest extends KafkaServerTestHarness with Logging {
     val topicPartition = new TopicPartition(topic, 0)
     brokers.foreach { broker =>
       val log = broker.logManager.getLog(new TopicPartition(topic, 0))
-      val brokerId = broker.config.brokerId
+      val brokerId = broker.config.serverConfig.brokerId
       val logSize = log.map(_.size)
       assertTrue(logSize.exists(_ > 0), s"Expected broker $brokerId to have a Log for $topicPartition with positive size, actual: $logSize")
     }

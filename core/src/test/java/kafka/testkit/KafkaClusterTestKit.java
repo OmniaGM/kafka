@@ -584,7 +584,7 @@ public class KafkaClusterTestKit implements AutoCloseable {
     public Map<Integer, KafkaRaftManager<ApiMessageAndVersion>> raftManagers() {
         Map<Integer, KafkaRaftManager<ApiMessageAndVersion>> results = new HashMap<>();
         for (BrokerServer brokerServer : brokers().values()) {
-            results.put(brokerServer.config().brokerId(), brokerServer.sharedServer().raftManager());
+            results.put(brokerServer.config().serverConfig().brokerId(), brokerServer.sharedServer().raftManager());
         }
         for (ControllerServer controllerServer : controllers().values()) {
             if (!results.containsKey(controllerServer.config().nodeId())) {

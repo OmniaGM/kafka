@@ -73,7 +73,7 @@ object Server {
     if (config.usesSelfManagedQuorum) {
       contextLabels.put(NodeIdLabel, config.nodeId.toString)
     } else {
-      contextLabels.put(BrokerIdLabel, config.brokerId.toString)
+      contextLabels.put(BrokerIdLabel, config.serverConfig.brokerId.toString)
     }
 
     contextLabels.putAll(config.originalsWithPrefix(CommonClientConfigs.METRICS_CONTEXT_PREFIX))

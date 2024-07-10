@@ -275,26 +275,26 @@ class ReplicaManager(val config: KafkaConfig,
 
   val delayedProducePurgatory = delayedProducePurgatoryParam.getOrElse(
     DelayedOperationPurgatory[DelayedProduce](
-      purgatoryName = "Produce", brokerId = config.brokerId,
+      purgatoryName = "Produce", brokerId = config.serverConfig.brokerId,
       purgeInterval = config.producerPurgatoryPurgeIntervalRequests))
   val delayedFetchPurgatory = delayedFetchPurgatoryParam.getOrElse(
     DelayedOperationPurgatory[DelayedFetch](
-      purgatoryName = "Fetch", brokerId = config.brokerId,
+      purgatoryName = "Fetch", brokerId = config.serverConfig.brokerId,
       purgeInterval = config.fetchPurgatoryPurgeIntervalRequests))
   val delayedDeleteRecordsPurgatory = delayedDeleteRecordsPurgatoryParam.getOrElse(
     DelayedOperationPurgatory[DelayedDeleteRecords](
-      purgatoryName = "DeleteRecords", brokerId = config.brokerId,
+      purgatoryName = "DeleteRecords", brokerId = config.serverConfig.brokerId,
       purgeInterval = config.deleteRecordsPurgatoryPurgeIntervalRequests))
   val delayedElectLeaderPurgatory = delayedElectLeaderPurgatoryParam.getOrElse(
     DelayedOperationPurgatory[DelayedElectLeader](
-      purgatoryName = "ElectLeader", brokerId = config.brokerId))
+      purgatoryName = "ElectLeader", brokerId = config.serverConfig.brokerId))
   val delayedRemoteFetchPurgatory = delayedRemoteFetchPurgatoryParam.getOrElse(
     DelayedOperationPurgatory[DelayedRemoteFetch](
-      purgatoryName = "RemoteFetch", brokerId = config.brokerId))
+      purgatoryName = "RemoteFetch", brokerId = config.serverConfig.brokerId))
 
   /* epoch of the controller that last changed the leader */
   @volatile private[server] var controllerEpoch: Int = KafkaController.InitialControllerEpoch
-  protected val localBrokerId = config.brokerId
+  protected val localBrokerId = config.serverConfig.brokerId
   protected val allPartitions = new Pool[TopicPartition, HostedPartition](
     valueFactory = Some(tp => HostedPartition.Online(Partition(tp, time, this)))
   )
@@ -1204,7 +1204,7 @@ class ReplicaManager(val config: KafkaConfig,
             val futureLog = futureLocalLogOrException(topicPartition)
             logManager.abortAndPauseCleaning(topicPartition)
 
-            val initialFetchState = InitialFetchState(topicId, BrokerEndPoint(config.brokerId, "localhost", -1),
+            val initialFetchState = InitialFetchState(topicId, BrokerEndPoint(config.serverConfig.brokerId, "localhost", -1),
               partition.getLeaderEpoch, futureLog.highWatermark)
             replicaAlterLogDirsManager.addFetcherForPartitions(Map(topicPartition -> initialFetchState))
           }
@@ -2141,7 +2141,7 @@ class ReplicaManager(val config: KafkaConfig,
       val topicPartition = partition.topicPartition
       logManager.getLog(topicPartition, isFuture = true).foreach { futureLog =>
         partition.log.foreach { _ =>
-          val leader = BrokerEndPoint(config.brokerId, "localhost", -1)
+          val leader = BrokerEndPoint(config.serverConfig.brokerId, "localhost", -1)
 
           // Add future replica log to partition's map if it's not existed
           if (partition.maybeCreateFutureReplica(futureLog.parentDir, offsetCheckpoints, topicIds(partition.topic))) {
@@ -2833,7 +2833,7 @@ class ReplicaManager(val config: KafkaConfig,
           val isNewLeaderEpoch = partition.makeFollower(state, offsetCheckpoints, Some(info.topicId), partitionAssignedDirectoryId)
 
           if (isInControlledShutdown && (info.partition.leader == NO_LEADER ||
-              !info.partition.isr.contains(config.brokerId))) {
+              !info.partition.isr.contains(config.serverConfig.brokerId))) {
             // During controlled shutdown, replica with no leaders and replica
             // where this broker is not in the ISR are stopped.
             partitionsToStopFetching.put(tp, false)

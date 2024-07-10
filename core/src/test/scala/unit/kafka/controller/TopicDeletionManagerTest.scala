@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Assertions._
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito._
 
+import java.util.Optional
+
 class TopicDeletionManagerTest {
 
   private val brokerId = 1
@@ -269,7 +271,7 @@ class TopicDeletionManagerTest {
     val brokerEpochs = brokers.map { brokerId =>
       val endpoint = new EndPoint("localhost", 9900 + brokerId, new ListenerName("blah"),
         SecurityProtocol.PLAINTEXT)
-      Broker(brokerId, Seq(endpoint), rack = None) -> 1L
+      Broker(brokerId, Seq(endpoint), rack = Optional.empty()) -> 1L
     }.toMap
     context.setLiveBrokers(brokerEpochs)
 

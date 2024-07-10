@@ -132,7 +132,7 @@ class LeaderElectionTest extends QuorumTestHarness {
     val securityProtocol = SecurityProtocol.PLAINTEXT
     val listenerName = ListenerName.forSecurityProtocol(securityProtocol)
     val brokerAndEpochs = servers.map(s =>
-      (new Broker(s.config.brokerId, "localhost", TestUtils.boundPort(s), listenerName, securityProtocol),
+      (new Broker(s.config.serverConfig.brokerId, "localhost", TestUtils.boundPort(s), listenerName, securityProtocol),
         s.kafkaController.brokerEpoch)).toMap
     val nodes = brokerAndEpochs.keys.map(_.node(listenerName))
 

@@ -126,7 +126,7 @@ class AdminClientWithPoliciesIntegrationTest extends KafkaServerTestHarness with
     createTopic(topic3)
 
     // Set a mutable broker config
-    val brokerResource = new ConfigResource(ConfigResource.Type.BROKER, brokers.head.config.brokerId.toString)
+    val brokerResource = new ConfigResource(ConfigResource.Type.BROKER, brokers.head.config.serverConfig.brokerId.toString)
     val brokerConfigs = Seq(new ConfigEntry(ServerConfigs.MESSAGE_MAX_BYTES_CONFIG, "50000")).asJava
     val alterResult1 = client.alterConfigs(Map(brokerResource -> new Config(brokerConfigs)).asJava)
     alterResult1.all.get

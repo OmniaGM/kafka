@@ -18,7 +18,7 @@ package kafka.zk
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
-import java.util.{Collections, Properties}
+import java.util.{Collections, Optional, Properties}
 import kafka.api.LeaderAndIsr
 import kafka.cluster.{Broker, EndPoint}
 import kafka.controller.{LeaderIsrAndControllerEpoch, ReplicaAssignment}
@@ -806,7 +806,7 @@ class KafkaZkClientTest extends QuorumTestHarness {
   }
 
   private def createBrokerInfo(id: Int, host: String, port: Int, securityProtocol: SecurityProtocol,
-                               rack: Option[String] = None,
+                               rack: Optional[String] = Optional.empty,
                                features: Features[SupportedVersionRange] = emptySupportedFeatures): BrokerInfo =
     BrokerInfo(
       Broker(
@@ -822,7 +822,6 @@ class KafkaZkClientTest extends QuorumTestHarness {
 
     val brokerInfo = createBrokerInfo(
       1, "test.host", 9999, SecurityProtocol.PLAINTEXT,
-      rack = None,
       features = Features.supportedFeatures(
         Map[String, SupportedVersionRange](
           "feature1" -> new SupportedVersionRange(1, 2)).asJava))

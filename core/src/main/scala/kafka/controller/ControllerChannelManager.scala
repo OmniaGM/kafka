@@ -61,7 +61,7 @@ class ControllerChannelManager(controllerEpoch: () => Int,
 
   protected val brokerStateInfo = new mutable.HashMap[Int, ControllerBrokerStateInfo]
   private val brokerLock = new Object
-  this.logIdent = "[Channel manager on controller " + config.brokerId + "]: "
+  this.logIdent = "[Channel manager on controller " + config.serverConfig.brokerId + "]: "
 
   metricsGroup.newGauge("TotalQueueSize",
     () => brokerLock synchronized {
@@ -116,11 +116,11 @@ class ControllerChannelManager(controllerEpoch: () => Int,
 
   private def addNewBroker(broker: Broker): Unit = {
     val messageQueue = new LinkedBlockingQueue[QueueItem]
-    debug(s"Controller ${config.brokerId} trying to connect to broker ${broker.id}")
+    debug(s"Controller ${config.serverConfig.brokerId} trying to connect to broker ${broker.id}")
     val controllerToBrokerListenerName = config.controlPlaneListenerName.getOrElse(config.interBrokerListenerName)
     val controllerToBrokerSecurityProtocol = config.controlPlaneSecurityProtocol.getOrElse(config.interBrokerSecurityProtocol)
     val brokerNode = broker.node(controllerToBrokerListenerName)
-    val logContext = new LogContext(s"[Controller id=${config.brokerId}, targetBrokerId=${brokerNode.idString}] ")
+    val logContext = new LogContext(s"[Controller id=${config.serverConfig.brokerId}, targetBrokerId=${brokerNode.idString}] ")
     val (networkClient, reconfigurableChannelBuilder) = {
       val channelBuilder = ChannelBuilders.clientChannelBuilder(
         controllerToBrokerSecurityProtocol,
@@ -152,15 +152,15 @@ class ControllerChannelManager(controllerEpoch: () => Int,
       val networkClient = new NetworkClient(
         selector,
         new ManualMetadataUpdater(Seq(brokerNode).asJava),
-        config.brokerId.toString,
+        config.serverConfig.brokerId.toString,
         1,
         0,
         0,
         Selectable.USE_DEFAULT_BUFFER_SIZE,
         Selectable.USE_DEFAULT_BUFFER_SIZE,
-        config.requestTimeoutMs,
-        config.connectionSetupTimeoutMs,
-        config.connectionSetupTimeoutMaxMs,
+        config.serverConfig.requestTimeoutMs,
+        config.serverConfig.connectionSetupTimeoutMs,
+        config.serverConfig.connectionSetupTimeoutMaxMs,
         time,
         false,
         new ApiVersions,
@@ -170,15 +170,15 @@ class ControllerChannelManager(controllerEpoch: () => Int,
       (networkClient, reconfigurableChannelBuilder)
     }
     val threadName = threadNamePrefix match {
-      case None => s"Controller-${config.brokerId}-to-broker-${broker.id}-send-thread"
-      case Some(name) => s"$name:Controller-${config.brokerId}-to-broker-${broker.id}-send-thread"
+      case None => s"Controller-${config.serverConfig.brokerId}-to-broker-${broker.id}-send-thread"
+      case Some(name) => s"$name:Controller-${config.serverConfig.brokerId}-to-broker-${broker.id}-send-thread"
     }
 
     val requestRateAndQueueTimeMetrics = metricsGroup.newTimer(
       RequestRateAndQueueTimeMetricName, TimeUnit.MILLISECONDS, TimeUnit.SECONDS, brokerMetricTags(broker.id)
     )
 
-    val requestThread = new RequestSendThread(config.brokerId, controllerEpoch, messageQueue, networkClient,
+    val requestThread = new RequestSendThread(config.serverConfig.brokerId, controllerEpoch, messageQueue, networkClient,
       brokerNode, config, time, requestRateAndQueueTimeMetrics, stateChangeLogger, threadName)
     requestThread.setDaemon(false)
 
@@ -373,7 +373,7 @@ abstract class AbstractControllerBrokerRequestBatch(config: KafkaConfig,
                                                     metadataVersionProvider: () => MetadataVersion,
                                                     stateChangeLogger: StateChangeLogger,
                                                     kraftController: Boolean = false) extends Logging {
-  val controllerId: Int = config.brokerId
+  val controllerId: Int = config.serverConfig.brokerId
   private val leaderAndIsrRequestMap = mutable.Map.empty[Int, mutable.Map[TopicPartition, LeaderAndIsrPartitionState]]
   private val stopReplicaRequestMap = mutable.Map.empty[Int, mutable.Map[TopicPartition, StopReplicaPartitionState]]
   private val updateMetadataRequestBrokerSet = mutable.Set.empty[Int]
@@ -612,7 +612,7 @@ abstract class AbstractControllerBrokerRequestBatch(config: KafkaConfig,
       new UpdateMetadataBroker()
         .setId(broker.id)
         .setEndpoints(endpoints.asJava)
-        .setRack(broker.rack.orNull)
+        .setRack(broker.rack.orElse(null))
     }.toBuffer
 
     updateMetadataRequestBrokerSet.intersect(metadataInstance.liveOrShuttingDownBrokerIds).foreach { broker =>

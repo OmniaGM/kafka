@@ -36,7 +36,7 @@ import org.apache.kafka.common.security.token.delegation.internals.DelegationTok
 import org.apache.kafka.common.utils.{LogContext, Time}
 import org.apache.kafka.common.{ClusterResource, TopicPartition, Uuid}
 import org.apache.kafka.coordinator.group.metrics.{GroupCoordinatorMetrics, GroupCoordinatorRuntimeMetrics}
-import org.apache.kafka.coordinator.group.{CoordinatorRecord, GroupCoordinator, GroupCoordinatorService, CoordinatorRecordSerde}
+import org.apache.kafka.coordinator.group.{CoordinatorRecord, CoordinatorRecordSerde, GroupCoordinator, GroupCoordinatorService}
 import org.apache.kafka.image.publisher.{BrokerRegistrationTracker, MetadataPublisher}
 import org.apache.kafka.metadata.{BrokerState, ListenerInfo, VersionRange}
 import org.apache.kafka.security.CredentialProvider
@@ -56,7 +56,7 @@ import java.util
 import java.util.Optional
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.{Condition, ReentrantLock}
-import java.util.concurrent.{CompletableFuture, ExecutionException, TimeoutException, TimeUnit}
+import java.util.concurrent.{CompletableFuture, ExecutionException, TimeUnit, TimeoutException}
 import scala.collection.Map
 import scala.compat.java8.OptionConverters.RichOptionForJava8
 import scala.jdk.CollectionConverters._
@@ -141,7 +141,7 @@ class BrokerServer(
 
   var brokerRegistrationTracker: BrokerRegistrationTracker = _
 
-  val brokerFeatures: BrokerFeatures = BrokerFeatures.createDefault(config.unstableFeatureVersionsEnabled)
+  val brokerFeatures: BrokerFeatures = BrokerFeatures.createDefault(config.serverConfig.unstableFeatureVersionsEnabled)
 
   def kafkaYammerMetrics: KafkaYammerMetrics = KafkaYammerMetrics.INSTANCE
 
@@ -182,7 +182,7 @@ class BrokerServer(
       config.dynamicConfig.initialize(zkClientOpt = None, Some(clientMetricsReceiverPlugin))
 
       /* start scheduler */
-      kafkaScheduler = new KafkaScheduler(config.backgroundThreads)
+      kafkaScheduler = new KafkaScheduler(config.serverConfig.backgroundThreads)
       kafkaScheduler.startup()
 
       /* register broker metrics */
@@ -271,7 +271,7 @@ class BrokerServer(
       )
       alterPartitionManager.start()
 
-      val addPartitionsLogContext = new LogContext(s"[AddPartitionsToTxnManager broker=${config.brokerId}]")
+      val addPartitionsLogContext = new LogContext(s"[AddPartitionsToTxnManager broker=${config.serverConfig.brokerId}]")
       val addPartitionsToTxnNetworkClient = NetworkUtils.buildNetworkClient("AddPartitionsManager", config, metrics, time, addPartitionsLogContext)
       val addPartitionsToTxnManager = new AddPartitionsToTxnManager(
         config,
@@ -295,7 +295,7 @@ class BrokerServer(
       assignmentsManager = new AssignmentsManager(
         time,
         assignmentsChannelManager,
-        config.brokerId,
+        config.serverConfig.brokerId,
         () => lifecycleManager.brokerEpoch,
         (directoryId: Uuid) => logManager.directoryPath(directoryId).asJava,
         (topicId: Uuid) => Optional.ofNullable(metadataCache.topicIdsToNames().get(topicId))
@@ -336,7 +336,7 @@ class BrokerServer(
       groupCoordinator = createGroupCoordinator()
 
       val producerIdManagerSupplier = () => ProducerIdManager.rpc(
-        config.brokerId,
+        config.serverConfig.brokerId,
         time,
         brokerEpochSupplier = () => lifecycleManager.brokerEpoch,
         clientToControllerChannelManager
@@ -394,7 +394,7 @@ class BrokerServer(
       val sessionIdRange = Int.MaxValue / NumFetchSessionCacheShards
       val fetchSessionCacheShards = (0 until NumFetchSessionCacheShards)
         .map(shardNum => new FetchSessionCacheShard(
-          config.maxIncrementalFetchSessionCacheSlots / NumFetchSessionCacheShards,
+          config.serverConfig.maxIncrementalFetchSessionCacheSlots / NumFetchSessionCacheShards,
           KafkaServer.MIN_INCREMENTAL_FETCH_SESSION_EVICTION_MS,
           sessionIdRange,
           shardNum
@@ -427,7 +427,7 @@ class BrokerServer(
 
       dataPlaneRequestHandlerPool = new KafkaRequestHandlerPool(config.nodeId,
         socketServer.dataPlaneRequestChannel, dataPlaneRequestProcessor, time,
-        config.numIoThreads, s"${DataPlaneAcceptor.MetricPrefix}RequestHandlerAvgIdlePercent",
+        config.serverConfig.numIoThreads, s"${DataPlaneAcceptor.MetricPrefix}RequestHandlerAvgIdlePercent",
         DataPlaneAcceptor.ThreadPrefix)
 
       // Start RemoteLogManager before initializing broker metadata publishers.
@@ -484,7 +484,7 @@ class BrokerServer(
         sharedServer.metadataPublishingFaultHandler
       )
       metadataPublishers.add(brokerMetadataPublisher)
-      brokerRegistrationTracker = new BrokerRegistrationTracker(config.brokerId,
+      brokerRegistrationTracker = new BrokerRegistrationTracker(config.serverConfig.brokerId,
         () => lifecycleManager.resendBrokerRegistrationUnlessZkMode())
       metadataPublishers.add(brokerRegistrationTracker)
 
@@ -581,7 +581,7 @@ class BrokerServer(
       val writer = new CoordinatorPartitionWriter(
         replicaManager
       )
-      new GroupCoordinatorService.Builder(config.brokerId, config.groupCoordinatorConfig)
+      new GroupCoordinatorService.Builder(config.serverConfig.brokerId, config.groupCoordinatorConfig)
         .withTime(time)
         .withTimer(timer)
         .withLoader(loader)
@@ -601,7 +601,7 @@ class BrokerServer(
 
   protected def createRemoteLogManager(): Option[RemoteLogManager] = {
     if (config.remoteLogManagerConfig.isRemoteStorageSystemEnabled()) {
-      Some(new RemoteLogManager(config.remoteLogManagerConfig, config.brokerId, config.logDirs.head, clusterId, time,
+      Some(new RemoteLogManager(config.remoteLogManagerConfig, config.serverConfig.brokerId, config.logDirs.head, clusterId, time,
         (tp: TopicPartition) => logManager.getLog(tp).asJava,
         (tp: TopicPartition, remoteLogStartOffset: java.lang.Long) => {
           logManager.getLog(tp).foreach { log =>
@@ -620,7 +620,7 @@ class BrokerServer(
       val deadline = time.milliseconds() + timeout.toMillis
       info("shutting down")
 
-      if (config.controlledShutdownEnable) {
+      if (config.serverConfig.controlledShutdownEnable) {
         if (replicaManager != null)
           replicaManager.beginControlledShutdown()
 

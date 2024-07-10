@@ -44,7 +44,7 @@ class OffsetsForLeaderEpochRequestTest extends BaseRequestTest {
       ApiKeys.OFFSET_FOR_LEADER_EPOCH.latestVersion, epochs, 1).build()
 
     // Unknown topic
-    val randomBrokerId = brokers.head.config.brokerId
+    val randomBrokerId = brokers.head.config.serverConfig.brokerId
     assertResponseError(Errors.UNKNOWN_TOPIC_OR_PARTITION, randomBrokerId, request)
 
     val partitionToLeader = createTopic(topic, replicationFactor = 2)
@@ -52,7 +52,7 @@ class OffsetsForLeaderEpochRequestTest extends BaseRequestTest {
     val replicas = topicDescription.get(partition.topic()).partitions().get(partition.partition()).replicas().asScala.map(_.id()).toSet
     val leader = partitionToLeader(partition.partition)
     val follower = replicas.find(_ != leader).get
-    val nonReplica = brokers.map(_.config.brokerId).find(!replicas.contains(_)).get
+    val nonReplica = brokers.map(_.config.serverConfig.brokerId).find(!replicas.contains(_)).get
 
     assertResponseError(Errors.NOT_LEADER_OR_FOLLOWER, follower, request)
     assertResponseError(Errors.NOT_LEADER_OR_FOLLOWER, nonReplica, request)

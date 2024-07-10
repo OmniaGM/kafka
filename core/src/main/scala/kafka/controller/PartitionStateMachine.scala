@@ -135,7 +135,7 @@ class ZkPartitionStateMachine(config: KafkaConfig,
 
   private val isLeaderRecoverySupported = config.interBrokerProtocolVersion.isAtLeast(IBP_3_2_IV0)
 
-  private val controllerId = config.brokerId
+  private val controllerId = config.serverConfig.brokerId
   this.logIdent = s"[PartitionStateMachine controllerId=$controllerId] "
 
   /**

@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,8 +28,8 @@ import org.apache.kafka.common.security.auth.SecurityProtocol
 import org.apache.kafka.metadata.{BrokerRegistration, VersionRange}
 import org.apache.kafka.server.authorizer.AuthorizerServerInfo
 
+import java.util.Optional
 import scala.collection.Seq
-import scala.compat.java8.OptionConverters._
 import scala.jdk.CollectionConverters._
 
 object Broker {
@@ -39,11 +39,11 @@ object Broker {
                                          interBrokerEndpoint: Endpoint,
                                          earlyStartListeners: util.Set[String]) extends AuthorizerServerInfo
 
-  def apply(id: Int, endPoints: Seq[EndPoint], rack: Option[String]): Broker = {
+  def apply(id: Int, endPoints: Seq[EndPoint], rack: Optional[String]): Broker = {
     new Broker(id, endPoints, rack, emptySupportedFeatures)
   }
 
-  def apply(id: Int, endPoint: EndPoint, rack: Option[String]): Broker = {
+  def apply(id: Int, endPoint: EndPoint, rack: Optional[String]): Broker = {
     new Broker(id, Seq(endPoint), rack, emptySupportedFeatures)
   }
 
@@ -58,7 +58,7 @@ object Broker {
     new Broker(
       registration.id(),
       registration.listeners().values().asScala.map(EndPoint.fromJava).toSeq,
-      registration.rack().asScala,
+      registration.rack(),
       Features.supportedFeatures(supportedFeatures(registration.supportedFeatures()))
     )
   }
@@ -67,12 +67,12 @@ object Broker {
 /**
  * A Kafka broker.
  *
- * @param id          a broker id
- * @param endPoints   a collection of EndPoint. Each end-point is (host, port, listener name, security protocol).
- * @param rack        an optional rack
- * @param features    supported features
+ * @param id        a broker id
+ * @param endPoints a collection of EndPoint. Each end-point is (host, port, listener name, security protocol).
+ * @param rack      an optional rack
+ * @param features  supported features
  */
-case class Broker(id: Int, endPoints: Seq[EndPoint], rack: Option[String], features: Features[SupportedVersionRange]) {
+case class Broker(id: Int, endPoints: Seq[EndPoint], rack: Optional[String], features: Features[SupportedVersionRange]) {
 
   private val endPointsMap = endPoints.map { endPoint =>
     endPoint.listenerName -> endPoint
@@ -82,10 +82,10 @@ case class Broker(id: Int, endPoints: Seq[EndPoint], rack: Option[String], featu
     throw new IllegalArgumentException(s"There is more than one end point with the same listener name: ${endPoints.mkString(",")}")
 
   override def toString: String =
-    s"$id : ${endPointsMap.values.mkString("(",",",")")} : ${rack.orNull} : $features"
+    s"$id : ${endPointsMap.values.mkString("(", ",", ")")} : ${rack.orElse(null)} : $features"
 
   def this(id: Int, host: String, port: Int, listenerName: ListenerName, protocol: SecurityProtocol) = {
-    this(id, Seq(EndPoint(host, port, listenerName, protocol)), None, emptySupportedFeatures)
+    this(id, Seq(EndPoint(host, port, listenerName, protocol)), Optional.empty(), emptySupportedFeatures)
   }
 
   def this(bep: BrokerEndPoint, listenerName: ListenerName, protocol: SecurityProtocol) = {
@@ -99,7 +99,7 @@ case class Broker(id: Int, endPoints: Seq[EndPoint], rack: Option[String], featu
     }
 
   def getNode(listenerName: ListenerName): Option[Node] =
-    endPointsMap.get(listenerName).map(endpoint => new Node(id, endpoint.host, endpoint.port, rack.orNull))
+    endPointsMap.get(listenerName).map(endpoint => new Node(id, endpoint.host, endpoint.port, rack.orElse(null)))
 
   def brokerEndPoint(listenerName: ListenerName): BrokerEndPoint = {
     val endpoint = endPoint(listenerName)

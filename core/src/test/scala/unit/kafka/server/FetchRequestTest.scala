@@ -62,7 +62,7 @@ class FetchRequestTest extends BaseFetchRequestTest {
     val topicNames = topicIds.asScala.map(_.swap).asJava
     produceData(topicPartitions, messagesPerPartition)
 
-    val leaderId = brokers.head.config.brokerId
+    val leaderId = brokers.head.config.serverConfig.brokerId
     val partitionsForLeader = topicPartitionToLeader.toVector.collect {
       case (tp, partitionLeaderId) if partitionLeaderId == leaderId => tp
     }
@@ -176,9 +176,9 @@ class FetchRequestTest extends BaseFetchRequestTest {
     val topicIds = getTopicIds().asJava
     val topicNames = topicIds.asScala.map(_.swap).asJava
     val leader = partitionToLeader(partition)
-    val nonReplicaOpt = brokers.find(_.config.brokerId != leader)
+    val nonReplicaOpt = brokers.find(_.config.serverConfig.brokerId != leader)
     assertTrue(nonReplicaOpt.isDefined)
-    val nonReplicaId =  nonReplicaOpt.get.config.brokerId
+    val nonReplicaId =  nonReplicaOpt.get.config.serverConfig.brokerId
 
     // Send the fetch request to the non-replica and verify the error code
     val fetchRequest = FetchRequest.Builder.forConsumer(ApiKeys.FETCH.latestVersion, Int.MaxValue, 0, createPartitionMap(1024,

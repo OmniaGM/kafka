@@ -92,7 +92,7 @@ class AddPartitionsToTxnRequestServerTest extends BaseRequestTest {
         AddPartitionsToTxnRequest.Builder.forBroker(transactions).build(version)
       }
 
-    val leaderId = brokers.head.config.brokerId
+    val leaderId = brokers.head.config.serverConfig.brokerId
     val response = connectAndReceive[AddPartitionsToTxnResponse](request, brokerSocketServer(leaderId))
     
     val errors = 
@@ -170,9 +170,9 @@ class AddPartitionsToTxnRequestServerTest extends BaseRequestTest {
   private def setUpTransactions(transactionalId: String, verifyOnly: Boolean, partitions: Set[TopicPartition]): (Int, AddPartitionsToTxnTransaction) = {
     val findCoordinatorRequest = new FindCoordinatorRequest.Builder(new FindCoordinatorRequestData().setKey(transactionalId).setKeyType(CoordinatorType.TRANSACTION.id)).build()
     // First find coordinator request creates the state topic, then wait for transactional topics to be created.
-    connectAndReceive[FindCoordinatorResponse](findCoordinatorRequest, brokerSocketServer(brokers.head.config.brokerId))
+    connectAndReceive[FindCoordinatorResponse](findCoordinatorRequest, brokerSocketServer(brokers.head.config.serverConfig.brokerId))
     TestUtils.waitForAllPartitionsMetadata(brokers, "__transaction_state", 50)
-    val findCoordinatorResponse = connectAndReceive[FindCoordinatorResponse](findCoordinatorRequest, brokerSocketServer(brokers.head.config.brokerId))
+    val findCoordinatorResponse = connectAndReceive[FindCoordinatorResponse](findCoordinatorRequest, brokerSocketServer(brokers.head.config.serverConfig.brokerId))
     val coordinatorId = findCoordinatorResponse.data().coordinators().get(0).nodeId()
 
     var initPidResponse: InitProducerIdResponse = null

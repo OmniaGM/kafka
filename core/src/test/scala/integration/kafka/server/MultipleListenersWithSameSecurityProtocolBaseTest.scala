@@ -104,10 +104,10 @@ abstract class MultipleListenersWithSameSecurityProtocolBaseTest extends QuorumT
     }
 
     servers.map(_.config).foreach { config =>
-      assertEquals(4, config.listeners.size, s"Unexpected listener count for broker ${config.brokerId}")
+      assertEquals(4, config.listeners.size, s"Unexpected listener count for broker ${config.serverConfig.brokerId}")
       // KAFKA-5184 seems to show that this value can sometimes be PLAINTEXT, so verify it here
       assertEquals(Internal, config.interBrokerListenerName.value,
-        s"Unexpected ${ReplicationConfigs.INTER_BROKER_LISTENER_NAME_CONFIG} for broker ${config.brokerId}")
+        s"Unexpected ${ReplicationConfigs.INTER_BROKER_LISTENER_NAME_CONFIG} for broker ${config.serverConfig.brokerId}")
     }
 
     TestUtils.createTopic(zkClient, Topic.GROUP_METADATA_TOPIC_NAME, GroupCoordinatorConfig.OFFSETS_TOPIC_PARTITIONS_DEFAULT,

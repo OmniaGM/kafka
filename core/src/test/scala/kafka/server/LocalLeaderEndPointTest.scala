@@ -69,7 +69,7 @@ class LocalLeaderEndPointTest extends Logging {
       scheduler = new MockScheduler(time),
       logManager = mockLogMgr,
       quotaManagers = quotaManager,
-      metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+      metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
       logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size),
       alterPartitionManager = alterPartitionManager)
     val partition = replicaManager.createPartition(topicPartition)

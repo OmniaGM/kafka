@@ -75,7 +75,7 @@ class AdminZkClient(zkClient: KafkaZkClient,
                          brokerList: Option[Seq[Int]] = None): Seq[BrokerMetadata] = {
     val allBrokers = zkClient.getAllBrokersInCluster
     val brokers = brokerList.map(brokerIds => allBrokers.filter(b => brokerIds.contains(b.id))).getOrElse(allBrokers)
-    val brokersWithRack = brokers.filter(_.rack.nonEmpty)
+    val brokersWithRack = brokers.filter(_.rack.isPresent)
     if (rackAwareMode == RackAwareMode.Enforced && brokersWithRack.nonEmpty && brokersWithRack.size < brokers.size) {
       throw new AdminOperationException("Not all brokers have rack information. Add --disable-rack-aware in command line" +
         " to make replica assignment without rack information.")
@@ -84,7 +84,7 @@ class AdminZkClient(zkClient: KafkaZkClient,
       case RackAwareMode.Disabled => brokers.map(broker => new BrokerMetadata(broker.id, Optional.empty()))
       case RackAwareMode.Safe if brokersWithRack.size < brokers.size =>
         brokers.map(broker => new BrokerMetadata(broker.id, Optional.empty()))
-      case _ => brokers.map(broker => new BrokerMetadata(broker.id, Optional.ofNullable(broker.rack.orNull)))
+      case _ => brokers.map(broker => new BrokerMetadata(broker.id, Optional.ofNullable(broker.rack.orElse(null))))
     }
     brokerMetadatas.sortBy(_.id)
   }

@@ -144,14 +144,14 @@ class ControllerIntegrationTest extends QuorumTestHarness {
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
     // Need to make sure the broker we shutdown and startup are not the controller. Otherwise we will send out
     // full UpdateMetadataRequest to all brokers during controller failover.
-    val testBroker = servers.filter(e => e.config.brokerId != controllerId).head
-    val remainingBrokers = servers.filter(_.config.brokerId != testBroker.config.brokerId)
+    val testBroker = servers.filter(e => e.config.serverConfig.brokerId != controllerId).head
+    val remainingBrokers = servers.filter(_.config.serverConfig.brokerId != testBroker.config.serverConfig.brokerId)
     val topic = "topic1"
     // Make sure shutdown the test broker will not require any leadership change to test avoid sending out full
     // UpdateMetadataRequest on broker failure
     val assignment = Map(
-      0 -> Seq(remainingBrokers(0).config.brokerId, testBroker.config.brokerId),
-      1 -> remainingBrokers.map(_.config.brokerId))
+      0 -> Seq(remainingBrokers(0).config.serverConfig.brokerId, testBroker.config.serverConfig.brokerId),
+      1 -> remainingBrokers.map(_.config.serverConfig.brokerId))
 
     // Create topic
     TestUtils.createTopic(zkClient, topic, assignment, servers)
@@ -163,9 +163,9 @@ class ControllerIntegrationTest extends QuorumTestHarness {
     remainingBrokers.foreach { server =>
       val offlineReplicaPartitionInfo = server.metadataCache.getPartitionInfo(topic, 0).get
       assertEquals(1, offlineReplicaPartitionInfo.offlineReplicas.size())
-      assertEquals(testBroker.config.brokerId, offlineReplicaPartitionInfo.offlineReplicas.get(0))
+      assertEquals(testBroker.config.serverConfig.brokerId, offlineReplicaPartitionInfo.offlineReplicas.get(0))
       assertEquals(assignment(0).asJava, offlineReplicaPartitionInfo.replicas)
-      assertEquals(Seq(remainingBrokers.head.config.brokerId).asJava, offlineReplicaPartitionInfo.isr)
+      assertEquals(Seq(remainingBrokers.head.config.serverConfig.brokerId).asJava, offlineReplicaPartitionInfo.isr)
       val onlinePartitionInfo = server.metadataCache.getPartitionInfo(topic, 1).get
       assertEquals(assignment(1).asJava, onlinePartitionInfo.replicas)
       assertTrue(onlinePartitionInfo.offlineReplicas.isEmpty)
@@ -195,14 +195,14 @@ class ControllerIntegrationTest extends QuorumTestHarness {
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
 
     //get brokerId for topic creation with single partition and RF =1
-    val replicaBroker = servers.filter(e => e.config.brokerId != controllerId).head
+    val replicaBroker = servers.filter(e => e.config.serverConfig.brokerId != controllerId).head
 
-    val controllerBroker = servers.filter(e => e.config.brokerId == controllerId).head
-    val otherBroker = servers.filter(e => e.config.brokerId != controllerId &&
-      e.config.brokerId != replicaBroker.config.brokerId).head
+    val controllerBroker = servers.filter(e => e.config.serverConfig.brokerId == controllerId).head
+    val otherBroker = servers.filter(e => e.config.serverConfig.brokerId != controllerId &&
+      e.config.serverConfig.brokerId != replicaBroker.config.serverConfig.brokerId).head
 
     val topic = "topic1"
-    val assignment = Map(0 -> Seq(replicaBroker.config.brokerId))
+    val assignment = Map(0 -> Seq(replicaBroker.config.serverConfig.brokerId))
 
     // Create topic
     TestUtils.createTopic(zkClient, topic, assignment, servers)
@@ -245,14 +245,14 @@ class ControllerIntegrationTest extends QuorumTestHarness {
     servers = makeServers(3)
     TestUtils.waitUntilBrokerMetadataIsPropagated(servers)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val replicaBroker = servers.filter(e => e.config.brokerId != controllerId).head
+    val replicaBroker = servers.filter(e => e.config.serverConfig.brokerId != controllerId).head
 
-    val controllerBroker = servers.filter(e => e.config.brokerId == controllerId).head
-    val otherBroker = servers.filter(e => e.config.brokerId != controllerId &&
-      e.config.brokerId != replicaBroker.config.brokerId).head
+    val controllerBroker = servers.filter(e => e.config.serverConfig.brokerId == controllerId).head
+    val otherBroker = servers.filter(e => e.config.serverConfig.brokerId != controllerId &&
+      e.config.serverConfig.brokerId != replicaBroker.config.serverConfig.brokerId).head
 
     val topic = "topic1"
-    val assignment = Map(0 -> Seq(replicaBroker.config.brokerId))
+    val assignment = Map(0 -> Seq(replicaBroker.config.serverConfig.brokerId))
 
     // Create topic
     TestUtils.createTopic(zkClient, topic, assignment, servers)
@@ -283,7 +283,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testTopicCreationWithOfflineReplica(): Unit = {
     servers = makeServers(2)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val otherBrokerId = servers.map(_.config.brokerId).filter(_ != controllerId).head
+    val otherBrokerId = servers.map(_.config.serverConfig.brokerId).filter(_ != controllerId).head
     servers(otherBrokerId).shutdown()
     servers(otherBrokerId).awaitShutdown()
     val tp = new TopicPartition("t", 0)
@@ -313,7 +313,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testTopicPartitionExpansionWithOfflineReplica(): Unit = {
     servers = makeServers(2)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val otherBrokerId = servers.map(_.config.brokerId).filter(_ != controllerId).head
+    val otherBrokerId = servers.map(_.config.serverConfig.brokerId).filter(_ != controllerId).head
     val tp0 = new TopicPartition("t", 0)
     val tp1 = new TopicPartition("t", 1)
     val assignment = Map(tp0.partition -> Seq(otherBrokerId, controllerId))
@@ -337,7 +337,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
     val metricName = s"kafka.controller:type=ControllerStats,name=${ControllerState.AlterPartitionReassignment.rateAndTimeMetricName.get}"
     val timerCount = timer(metricName).count
 
-    val otherBrokerId = servers.map(_.config.brokerId).filter(_ != controllerId).head
+    val otherBrokerId = servers.map(_.config.serverConfig.brokerId).filter(_ != controllerId).head
     val tp = new TopicPartition("t", 0)
     val assignment = Map(tp.partition -> Seq(controllerId))
     val reassignment = Map(tp -> ReplicaAssignment(Seq(otherBrokerId), List(), List()))
@@ -363,8 +363,8 @@ class ControllerIntegrationTest extends QuorumTestHarness {
     val metricName = s"kafka.controller:type=ControllerStats,name=${ControllerState.AlterPartitionReassignment.rateAndTimeMetricName.get}"
     val timerCount = timer(metricName).count
 
-    val otherBroker = servers.filter(_.config.brokerId != controllerId).head
-    val otherBrokerId = otherBroker.config.brokerId
+    val otherBroker = servers.filter(_.config.serverConfig.brokerId != controllerId).head
+    val otherBrokerId = otherBroker.config.serverConfig.brokerId
 
     // To have an offline log dir, we need a topicPartition assigned to it
     val topicPartitionToPutOffline = new TopicPartition("filler", 0)
@@ -398,7 +398,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testPartitionReassignmentWithOfflineReplicaHaltingProgress(): Unit = {
     servers = makeServers(2)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val otherBrokerId = servers.map(_.config.brokerId).filter(_ != controllerId).head
+    val otherBrokerId = servers.map(_.config.serverConfig.brokerId).filter(_ != controllerId).head
     val tp = new TopicPartition("t", 0)
     val assignment = Map(tp.partition -> Seq(controllerId))
     val reassignment = Map(tp -> Seq(otherBrokerId))
@@ -417,7 +417,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testPartitionReassignmentResumesAfterReplicaComesOnline(): Unit = {
     servers = makeServers(2)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val otherBrokerId = servers.map(_.config.brokerId).filter(_ != controllerId).head
+    val otherBrokerId = servers.map(_.config.serverConfig.brokerId).filter(_ != controllerId).head
     val tp = new TopicPartition("t", 0)
     val assignment = Map(tp.partition -> Seq(controllerId))
     val reassignment = Map(tp -> ReplicaAssignment(Seq(otherBrokerId), List(), List()))
@@ -440,9 +440,9 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testPreferredReplicaLeaderElection(): Unit = {
     servers = makeServers(2)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val otherBroker = servers.find(_.config.brokerId != controllerId).get
+    val otherBroker = servers.find(_.config.serverConfig.brokerId != controllerId).get
     val tp = new TopicPartition("t", 0)
-    val assignment = Map(tp.partition -> Seq(otherBroker.config.brokerId, controllerId))
+    val assignment = Map(tp.partition -> Seq(otherBroker.config.serverConfig.brokerId, controllerId))
     TestUtils.createTopic(zkClient, tp.topic, partitionReplicaAssignment = assignment, servers = servers)
     preferredReplicaLeaderElection(controllerId, otherBroker, tp, assignment(tp.partition).toSet, LeaderAndIsr.InitialLeaderEpoch)
   }
@@ -451,9 +451,9 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testBackToBackPreferredReplicaLeaderElections(): Unit = {
     servers = makeServers(2)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val otherBroker = servers.find(_.config.brokerId != controllerId).get
+    val otherBroker = servers.find(_.config.serverConfig.brokerId != controllerId).get
     val tp = new TopicPartition("t", 0)
-    val assignment = Map(tp.partition -> Seq(otherBroker.config.brokerId, controllerId))
+    val assignment = Map(tp.partition -> Seq(otherBroker.config.serverConfig.brokerId, controllerId))
     TestUtils.createTopic(zkClient, tp.topic, partitionReplicaAssignment = assignment, servers = servers)
     preferredReplicaLeaderElection(controllerId, otherBroker, tp, assignment(tp.partition).toSet, LeaderAndIsr.InitialLeaderEpoch)
     preferredReplicaLeaderElection(controllerId, otherBroker, tp, assignment(tp.partition).toSet, LeaderAndIsr.InitialLeaderEpoch + 2)
@@ -463,7 +463,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testPreferredReplicaLeaderElectionWithOfflinePreferredReplica(): Unit = {
     servers = makeServers(2)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val otherBrokerId = servers.map(_.config.brokerId).filter(_ != controllerId).head
+    val otherBrokerId = servers.map(_.config.serverConfig.brokerId).filter(_ != controllerId).head
     val tp = new TopicPartition("t", 0)
     val assignment = Map(tp.partition -> Seq(otherBrokerId, controllerId))
     TestUtils.createTopic(zkClient, tp.topic, partitionReplicaAssignment = assignment, servers = servers)
@@ -480,7 +480,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testAutoPreferredReplicaLeaderElection(): Unit = {
     servers = makeServers(2, autoLeaderRebalanceEnable = true)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val otherBrokerId = servers.map(_.config.brokerId).filter(_ != controllerId).head
+    val otherBrokerId = servers.map(_.config.serverConfig.brokerId).filter(_ != controllerId).head
     val tp = new TopicPartition("t", 0)
     val assignment = Map(tp.partition -> Seq(1, 0))
     TestUtils.createTopic(zkClient, tp.topic, partitionReplicaAssignment = assignment, servers = servers)
@@ -497,8 +497,8 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testAutoPreferredReplicaLeaderElectionWithOtherReassigningPartitions(): Unit = {
     servers = makeServers(3, autoLeaderRebalanceEnable = true)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val leaderBrokerId = servers.map(_.config.brokerId).filter(_ != controllerId).head
-    val otherBrokerId = servers.map(_.config.brokerId).filter(e => e != controllerId && e != leaderBrokerId).head
+    val leaderBrokerId = servers.map(_.config.serverConfig.brokerId).filter(_ != controllerId).head
+    val otherBrokerId = servers.map(_.config.serverConfig.brokerId).filter(e => e != controllerId && e != leaderBrokerId).head
 
     // Partition tp: [leaderBrokerId, controllerId]
     // Partition reassigningTp: [controllerId]
@@ -544,8 +544,8 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testAutoPreferredReplicaLeaderElectionWithSamePartitionBeingReassigned(): Unit = {
     servers = makeServers(3, autoLeaderRebalanceEnable = true)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val leaderBrokerId = servers.map(_.config.brokerId).filter(_ != controllerId).head
-    val otherBrokerId = servers.map(_.config.brokerId).filter(e => e != controllerId && e != leaderBrokerId).head
+    val leaderBrokerId = servers.map(_.config.serverConfig.brokerId).filter(_ != controllerId).head
+    val otherBrokerId = servers.map(_.config.serverConfig.brokerId).filter(e => e != controllerId && e != leaderBrokerId).head
 
     // Partition tp: [controllerId, leaderBrokerId]
     val tp = new TopicPartition("t", 0)
@@ -578,7 +578,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testLeaderAndIsrWhenEntireIsrOfflineAndUncleanLeaderElectionDisabled(): Unit = {
     servers = makeServers(2)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val otherBrokerId = servers.map(_.config.brokerId).filter(_ != controllerId).head
+    val otherBrokerId = servers.map(_.config.serverConfig.brokerId).filter(_ != controllerId).head
     val tp = new TopicPartition("t", 0)
     val assignment = Map(tp.partition -> Seq(otherBrokerId))
     TestUtils.createTopic(zkClient, tp.topic, partitionReplicaAssignment = assignment, servers = servers)
@@ -598,7 +598,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testLeaderAndIsrWhenEntireIsrOfflineAndUncleanLeaderElectionEnabled(): Unit = {
     servers = makeServers(2, uncleanLeaderElectionEnable = true)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val otherBrokerId = servers.map(_.config.brokerId).filter(_ != controllerId).head
+    val otherBrokerId = servers.map(_.config.serverConfig.brokerId).filter(_ != controllerId).head
     val tp = new TopicPartition("t", 0)
     val assignment = Map(tp.partition -> Seq(otherBrokerId))
     TestUtils.createTopic(zkClient, tp.topic, partitionReplicaAssignment = assignment, servers = servers)
@@ -626,12 +626,12 @@ class ControllerIntegrationTest extends QuorumTestHarness {
     TestUtils.createTopic(zkClient, topic, partitionReplicaAssignment = expectedReplicaAssignment, servers = servers)
 
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val controller = servers.find(p => p.config.brokerId == controllerId).get.kafkaController
+    val controller = servers.find(p => p.config.serverConfig.brokerId == controllerId).get.kafkaController
     val resultQueue = new LinkedBlockingQueue[Try[collection.Set[TopicPartition]]]()
     val controlledShutdownCallback = (controlledShutdownResult: Try[collection.Set[TopicPartition]]) => resultQueue.put(controlledShutdownResult)
-    controller.controlledShutdown(2, servers.find(_.config.brokerId == 2).get.kafkaController.brokerEpoch, controlledShutdownCallback)
+    controller.controlledShutdown(2, servers.find(_.config.serverConfig.brokerId == 2).get.kafkaController.brokerEpoch, controlledShutdownCallback)
     var partitionsRemaining = resultQueue.take().get
-    var activeServers = servers.filter(s => s.config.brokerId != 2)
+    var activeServers = servers.filter(s => s.config.serverConfig.brokerId != 2)
     // wait for the update metadata request to trickle to the brokers
     TestUtils.waitUntilTrue(() =>
       activeServers.forall(_.dataPlaneRequestProcessor.metadataCache.getPartitionInfo(topic,partition).get.isr.size != 3),
@@ -642,19 +642,19 @@ class ControllerIntegrationTest extends QuorumTestHarness {
     assertEquals(0, leaderAfterShutdown)
     assertEquals(2, partitionStateInfo.isr.size)
     assertEquals(List(0,1), partitionStateInfo.isr.asScala)
-    controller.controlledShutdown(1, servers.find(_.config.brokerId == 1).get.kafkaController.brokerEpoch, controlledShutdownCallback)
+    controller.controlledShutdown(1, servers.find(_.config.serverConfig.brokerId == 1).get.kafkaController.brokerEpoch, controlledShutdownCallback)
     partitionsRemaining = resultQueue.take() match {
       case Success(partitions) => partitions
       case Failure(exception) => throw new AssertionError("Controlled shutdown failed due to error", exception)
     }
     assertEquals(0, partitionsRemaining.size)
-    activeServers = servers.filter(s => s.config.brokerId == 0)
+    activeServers = servers.filter(s => s.config.serverConfig.brokerId == 0)
     partitionStateInfo = activeServers.head.dataPlaneRequestProcessor.metadataCache.getPartitionInfo(topic,partition).get
     leaderAfterShutdown = partitionStateInfo.leader
     assertEquals(0, leaderAfterShutdown)
 
     assertTrue(servers.forall(_.dataPlaneRequestProcessor.metadataCache.getPartitionInfo(topic,partition).get.leader == 0))
-    controller.controlledShutdown(0, servers.find(_.config.brokerId == 0).get.kafkaController.brokerEpoch, controlledShutdownCallback)
+    controller.controlledShutdown(0, servers.find(_.config.serverConfig.brokerId == 0).get.kafkaController.brokerEpoch, controlledShutdownCallback)
     partitionsRemaining = resultQueue.take().get
     assertEquals(1, partitionsRemaining.size)
     // leader doesn't change since all the replicas are shut down
@@ -668,9 +668,9 @@ class ControllerIntegrationTest extends QuorumTestHarness {
     servers = serverConfigs.reverse.map(s => TestUtils.createServer(s))
 
     val controller = getController().kafkaController
-    val otherBroker = servers.find(e => e.config.brokerId != controller.config.brokerId).get
+    val otherBroker = servers.find(e => e.config.serverConfig.brokerId != controller.config.serverConfig.brokerId).get
     @volatile var staleBrokerEpochDetected = false
-    controller.controlledShutdown(otherBroker.config.brokerId, otherBroker.kafkaController.brokerEpoch - 1, {
+    controller.controlledShutdown(otherBroker.config.serverConfig.brokerId, otherBroker.kafkaController.brokerEpoch - 1, {
       case scala.util.Failure(exception) if exception.isInstanceOf[StaleBrokerEpochException] => staleBrokerEpochDetected = true
       case _ =>
     })
@@ -761,7 +761,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testControllerDetectsBouncedBrokers(): Unit = {
     servers = makeServers(2, enableControlledShutdown = false)
     val controller = getController().kafkaController
-    val otherBroker = servers.find(e => e.config.brokerId != controller.config.brokerId).get
+    val otherBroker = servers.find(e => e.config.serverConfig.brokerId != controller.config.serverConfig.brokerId).get
 
     // Create a topic
     val tp = new TopicPartition("t", 0)
@@ -1068,9 +1068,9 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testIdempotentAlterPartition(): Unit = {
     servers = makeServers(2)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val otherBroker = servers.find(_.config.brokerId != controllerId).get
+    val otherBroker = servers.find(_.config.serverConfig.brokerId != controllerId).get
     val tp = new TopicPartition("t", 0)
-    val assignment = Map(tp.partition -> Seq(otherBroker.config.brokerId, controllerId))
+    val assignment = Map(tp.partition -> Seq(otherBroker.config.serverConfig.brokerId, controllerId))
     TestUtils.createTopic(zkClient, tp.topic, partitionReplicaAssignment = assignment, servers = servers)
 
     val controller = getController().kafkaController
@@ -1079,8 +1079,8 @@ class ControllerIntegrationTest extends QuorumTestHarness {
     val newIsr = List(oldLeaderAndIsr.leader)
     val newPartitionEpoch = oldLeaderAndIsr.partitionEpoch + 1
     val topicId = controller.controllerContext.topicIds(tp.topic)
-    val brokerId = otherBroker.config.brokerId
-    val brokerEpoch = controller.controllerContext.liveBrokerIdAndEpochs(otherBroker.config.brokerId)
+    val brokerId = otherBroker.config.serverConfig.brokerId
+    val brokerEpoch = controller.controllerContext.liveBrokerIdAndEpochs(otherBroker.config.serverConfig.brokerId)
 
     def sendAndVerifyAlterPartitionResponse(requestPartitionEpoch: Int): Unit = {
       val alterPartitionRequest = new AlterPartitionRequestData()
@@ -1129,8 +1129,8 @@ class ControllerIntegrationTest extends QuorumTestHarness {
   def testShutdownBrokerNotAddedToIsr(alterPartitionVersion: Short): Unit = {
     servers = makeServers(2)
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    val otherBroker = servers.find(_.config.brokerId != controllerId).get
-    val brokerId = otherBroker.config.brokerId
+    val otherBroker = servers.find(_.config.serverConfig.brokerId != controllerId).get
+    val brokerId = otherBroker.config.serverConfig.brokerId
     val tp = new TopicPartition("t", 0)
     val assignment = Map(tp.partition -> Seq(controllerId, brokerId))
     val fullIsr = List(controllerId, brokerId)
@@ -1731,12 +1731,12 @@ class ControllerIntegrationTest extends QuorumTestHarness {
     assertEquals(0, originalControllerId)
     val controller = getController().kafkaController
     assertEquals(IBP_2_7_IV0, servers(originalControllerId).config.interBrokerProtocolVersion)
-    val remainingBrokers = servers.filter(_.config.brokerId != originalControllerId)
+    val remainingBrokers = servers.filter(_.config.serverConfig.brokerId != originalControllerId)
     val tp = new TopicPartition("t", 0)
     // Only the remaining brokers will have the replicas for the partition
-    val assignment = Map(tp.partition -> remainingBrokers.map(_.config.brokerId))
+    val assignment = Map(tp.partition -> remainingBrokers.map(_.config.serverConfig.brokerId))
     TestUtils.createTopic(zkClient, tp.topic, partitionReplicaAssignment = assignment, servers = servers)
-    waitForPartitionState(tp, firstControllerEpoch, remainingBrokers(0).config.brokerId, LeaderAndIsr.InitialLeaderEpoch,
+    waitForPartitionState(tp, firstControllerEpoch, remainingBrokers(0).config.serverConfig.brokerId, LeaderAndIsr.InitialLeaderEpoch,
       "failed to get expected partition state upon topic creation")
     val (topicIdAfterCreate, _) = TestUtils.computeUntilTrue(zkClient.getTopicIdsForTopics(Set(tp.topic)).get(tp.topic))(_.nonEmpty)
     assertEquals(None, topicIdAfterCreate)
@@ -1745,7 +1745,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
 
     // All partition logs should not have topic IDs
     remainingBrokers.foreach { server =>
-      TestUtils.waitUntilTrue(() => server.logManager.getLog(tp).isDefined, "log was not created for server" + server.config.brokerId)
+      TestUtils.waitUntilTrue(() => server.logManager.getLog(tp).isDefined, "log was not created for server" + server.config.serverConfig.brokerId)
       val topicIdInLog = server.logManager.getLog(tp).get.topicId
       assertEquals(None, topicIdInLog)
     }
@@ -1766,10 +1766,10 @@ class ControllerIntegrationTest extends QuorumTestHarness {
 
     // All partition logs should have topic IDs
     remainingBrokers.foreach { server =>
-      TestUtils.waitUntilTrue(() => server.logManager.getLog(tp).isDefined, "log was not created for server" + server.config.brokerId)
+      TestUtils.waitUntilTrue(() => server.logManager.getLog(tp).isDefined, "log was not created for server" + server.config.serverConfig.brokerId)
       val topicIdInLog = server.logManager.getLog(tp).get.topicId
       assertEquals(Some(topicId), topicIdInLog,
-        s"Server ${server.config.brokerId} had topic ID $topicIdInLog instead of ${Some(topicId)} as expected.")
+        s"Server ${server.config.serverConfig.brokerId} had topic ID $topicIdInLog instead of ${Some(topicId)} as expected.")
     }
 
     adminZkClient.deleteTopic(tp.topic)
@@ -1903,7 +1903,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
     zkClient.createPreferredReplicaElection(Set(tp))
     TestUtils.waitUntilTrue(() => !zkClient.pathExists(PreferredReplicaElectionZNode.path),
       "failed to remove preferred replica leader election path after completion")
-    waitForPartitionState(tp, firstControllerEpoch, otherBroker.config.brokerId, leaderEpoch + 2,
+    waitForPartitionState(tp, firstControllerEpoch, otherBroker.config.serverConfig.brokerId, leaderEpoch + 2,
       "failed to get expected partition state upon broker startup")
   }
 
@@ -1962,7 +1962,7 @@ class ControllerIntegrationTest extends QuorumTestHarness {
 
   private def getController(): KafkaServer = {
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    servers.filter(s => s.config.brokerId == controllerId).head
+    servers.filter(s => s.config.serverConfig.brokerId == controllerId).head
   }
 
   private def alterPartitionFuture(alterPartitionRequest: AlterPartitionRequestData,

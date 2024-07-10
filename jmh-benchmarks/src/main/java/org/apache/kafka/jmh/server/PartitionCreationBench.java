@@ -162,7 +162,7 @@ public class PartitionCreationBench {
             setLogManager(logManager).
             setQuotaManagers(quotaManagers).
             setBrokerTopicStats(brokerTopicStats).
-            setMetadataCache(MetadataCache.zkMetadataCache(this.brokerProperties.brokerId(),
+            setMetadataCache(MetadataCache.zkMetadataCache(this.brokerProperties.serverConfig().brokerId(),
                 this.brokerProperties.interBrokerProtocolVersion(), BrokerFeatures.createEmpty(),
                 false)).
             setLogDirFailureChannel(failureChannel).

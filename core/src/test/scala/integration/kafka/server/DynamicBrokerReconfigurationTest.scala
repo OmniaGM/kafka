@@ -459,7 +459,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
     }
 
     def verifyBrokerToControllerCall(controller: KafkaServer): Unit = {
-      val nonControllerBroker = servers.find(_.config.brokerId != controller.config.brokerId).get
+      val nonControllerBroker = servers.find(_.config.serverConfig.brokerId != controller.config.serverConfig.brokerId).get
       val brokerToControllerManager = nonControllerBroker.clientToControllerChannelManager
       val completionHandler = new TestControllerRequestCompletionHandler()
       brokerToControllerManager.sendRequest(new MetadataRequest.Builder(new MetadataRequestData()), completionHandler)
@@ -519,7 +519,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
     waitForAuthenticationFailure(producerBuilder.keyStoreProps(sslProperties1))
 
     if (!isKRaftTest()) {
-      val controller = servers.find(_.config.brokerId == TestUtils.waitUntilControllerElected(zkClient)).get.asInstanceOf[KafkaServer]
+      val controller = servers.find(_.config.serverConfig.brokerId == TestUtils.waitUntilControllerElected(zkClient)).get.asInstanceOf[KafkaServer]
       val controllerChannelManager = controller.kafkaController.controllerChannelManager
       val brokerStateInfo: mutable.HashMap[Int, ControllerBrokerStateInfo] =
         JTestUtils.fieldValue(controllerChannelManager, classOf[ControllerChannelManager], "brokerStateInfo")
@@ -743,8 +743,8 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
 
   @Test
   def testUncleanLeaderElectionEnable(): Unit = {
-    val controller = servers.find(_.config.brokerId == TestUtils.waitUntilControllerElected(zkClient)).get
-    val controllerId = controller.config.brokerId
+    val controller = servers.find(_.config.serverConfig.brokerId == TestUtils.waitUntilControllerElected(zkClient)).get
+    val controllerId = controller.config.serverConfig.brokerId
 
     // Create a topic with two replicas on brokers other than the controller
     val topic = "testtopic2"
@@ -761,8 +761,8 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
 
     val partitionInfo0 = partitionInfo
     assertEquals(partitionInfo0.replicas.get(0), partitionInfo0.leader)
-    val leaderBroker = servers.find(_.config.brokerId == partitionInfo0.replicas.get(0).id).get
-    val followerBroker = servers.find(_.config.brokerId == partitionInfo0.replicas.get(1).id).get
+    val leaderBroker = servers.find(_.config.serverConfig.brokerId == partitionInfo0.replicas.get(0).id).get
+    val followerBroker = servers.find(_.config.serverConfig.brokerId == partitionInfo0.replicas.get(1).id).get
 
     // Stop follower
     followerBroker.shutdown()
@@ -789,7 +789,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
     // Verify that the old follower with missing records is elected as the new leader
     val (newLeader, elected) = TestUtils.computeUntilTrue(partitionInfo.leader)(leader => leader != null)
     assertTrue(elected, "Unclean leader not elected")
-    assertEquals(followerBroker.config.brokerId, newLeader.id)
+    assertEquals(followerBroker.config.serverConfig.brokerId, newLeader.id)
 
     // New leader doesn't have the last 10 records committed on the old leader that have already been consumed.
     // With unclean leader election enabled, we should be able to produce to the new leader. The first 10 records
@@ -822,8 +822,8 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
     }
 
     val leftOverThreads = Map(
-      requestHandlerPrefix -> leftOverThreadCount(requestHandlerPrefix, servers.head.config.numIoThreads),
-      networkThreadPrefix -> leftOverThreadCount(networkThreadPrefix, servers.head.config.numNetworkThreads),
+      requestHandlerPrefix -> leftOverThreadCount(requestHandlerPrefix, servers.head.config.serverConfig.numIoThreads),
+      networkThreadPrefix -> leftOverThreadCount(networkThreadPrefix, servers.head.config.serverConfig.numNetworkThreads),
       fetcherThreadPrefix -> leftOverThreadCount(fetcherThreadPrefix, servers.head.config.numReplicaFetchers)
     )
 
@@ -870,15 +870,15 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
     }
 
     val config = servers.head.config
-    verifyThreadPoolResize(ServerConfigs.NUM_IO_THREADS_CONFIG, config.numIoThreads,
+    verifyThreadPoolResize(ServerConfigs.NUM_IO_THREADS_CONFIG, config.serverConfig.numIoThreads,
       requestHandlerPrefix, mayReceiveDuplicates = false)
     verifyThreadPoolResize(ReplicationConfigs.NUM_REPLICA_FETCHERS_CONFIG, config.numReplicaFetchers,
       fetcherThreadPrefix, mayReceiveDuplicates = false)
-    verifyThreadPoolResize(ServerConfigs.BACKGROUND_THREADS_CONFIG, config.backgroundThreads,
+    verifyThreadPoolResize(ServerConfigs.BACKGROUND_THREADS_CONFIG, config.serverConfig.backgroundThreads,
       "kafka-scheduler-", mayReceiveDuplicates = false)
     verifyThreadPoolResize(ServerLogConfigs.NUM_RECOVERY_THREADS_PER_DATA_DIR_CONFIG, config.numRecoveryThreadsPerDataDir,
       "", mayReceiveDuplicates = false)
-    verifyThreadPoolResize(ServerConfigs.NUM_NETWORK_THREADS_CONFIG, config.numNetworkThreads,
+    verifyThreadPoolResize(ServerConfigs.NUM_NETWORK_THREADS_CONFIG, config.serverConfig.numNetworkThreads,
       networkThreadPrefix, mayReceiveDuplicates = true)
     verifyThreads("data-plane-kafka-socket-acceptor-", config.listeners.size)
 
@@ -900,7 +900,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
   // Since processor ids are not reused, it is sufficient to check metrics count
   // based on the current number of processors
   private def verifyProcessorMetrics(): Unit = {
-    val numProcessors = servers.head.config.numNetworkThreads * 2 // 2 listeners
+    val numProcessors = servers.head.config.serverConfig.numNetworkThreads * 2 // 2 listeners
 
     val kafkaMetrics = servers.head.metrics.metrics().keySet.asScala
       .filter(_.tags.containsKey(Processor.NetworkProcessorMetricTag))
@@ -953,7 +953,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
       assertFalse(reporter.kafkaMetrics.isEmpty, "No metrics found")
       reporter.verifyMetricValue("request-total", "socket-server-metrics")
     }
-    assertEquals(servers.map(_.config.brokerId).toSet, TestMetricsReporter.configuredBrokers.toSet)
+    assertEquals(servers.map(_.config.serverConfig.brokerId).toSet, TestMetricsReporter.configuredBrokers.toSet)
 
     // non-default value to trigger a new metric
     val clientId = "test-client-1"
@@ -1042,7 +1042,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
     alterAdvertisedListener(adminClient, externalAdminClient, "localhost", invalidHost)
 
     def validateEndpointsInZooKeeper(server: KafkaServer, endpointMatcher: String => Boolean): Unit = {
-      val brokerInfo = zkClient.getBroker(server.config.brokerId)
+      val brokerInfo = zkClient.getBroker(server.config.serverConfig.brokerId)
       assertTrue(brokerInfo.nonEmpty, "Broker not registered")
       val endpoints = brokerInfo.get.endPoints.toString
       assertTrue(endpointMatcher(endpoints), s"Endpoint update not saved $endpoints")
@@ -1113,7 +1113,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
     // and update ZK. When each server is started, it should decode using password.encoder.old.secret and update
     // ZK with newly encoded values using password.encoder.secret.
     servers.foreach { server =>
-      val props = adminZkClient.fetchEntityConfig(ConfigType.BROKER, server.config.brokerId.toString)
+      val props = adminZkClient.fetchEntityConfig(ConfigType.BROKER, server.config.serverConfig.brokerId.toString)
       val propsEncodedWithOldSecret = props.clone().asInstanceOf[Properties]
       val config = server.config
       val oldSecret = "old-dynamic-config-secret"
@@ -1126,7 +1126,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
         val decoded = passwordDecoder.decode(value).value
         propsEncodedWithOldSecret.put(name, passwordEncoder.encode(new Password(decoded)))
       }
-      val brokerId = server.config.brokerId
+      val brokerId = server.config.serverConfig.brokerId
       adminZkClient.changeBrokerConfig(Seq(brokerId), propsEncodedWithOldSecret)
       val updatedProps = adminZkClient.fetchEntityConfig(ConfigType.BROKER, brokerId.toString)
       passwordConfigs.foreach { case (name, value) => assertNotEquals(props.get(value), updatedProps.get(name)) }
@@ -1174,7 +1174,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
       .maxRetries(1000)
       .build()
     val partitions = producer.partitionsFor(topic).asScala
-    assertEquals(0, partitions.count(p => p.leader != null && p.leader.id == servers.head.config.brokerId))
+    assertEquals(0, partitions.count(p => p.leader != null && p.leader.id == servers.head.config.serverConfig.brokerId))
     assertTrue(partitions.exists(_.leader == null), "Did not find partitions with no leader")
   }
 
@@ -1184,7 +1184,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
     val client = adminClients.head
     val broker = servers.head
     assertEquals(2, broker.config.dynamicConfig.reconfigurables.asScala.count(r => r.isInstanceOf[DataPlaneAcceptor]))
-    val broker0Resource = new ConfigResource(ConfigResource.Type.BROKER, broker.config.brokerId.toString)
+    val broker0Resource = new ConfigResource(ConfigResource.Type.BROKER, broker.config.serverConfig.brokerId.toString)
 
     def acceptors: Seq[DataPlaneAcceptor] = broker.config.dynamicConfig.reconfigurables.asScala.filter(_.isInstanceOf[DataPlaneAcceptor])
       .map(_.asInstanceOf[DataPlaneAcceptor]).toSeq
@@ -1389,7 +1389,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
   }
 
   private def fetchBrokerConfigsFromZooKeeper(server: KafkaBroker): Properties = {
-    val props = adminZkClient.fetchEntityConfig(ConfigType.BROKER, server.config.brokerId.toString)
+    val props = adminZkClient.fetchEntityConfig(ConfigType.BROKER, server.config.serverConfig.brokerId.toString)
     server.config.dynamicConfig.fromPersistentProps(props, perBrokerConfig = true)
   }
 
@@ -1444,7 +1444,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
 
   private def describeConfig(adminClient: Admin, servers: Seq[KafkaBroker] = this.servers): Config = {
     val configResources = servers.map { server =>
-      new ConfigResource(ConfigResource.Type.BROKER, server.config.brokerId.toString)
+      new ConfigResource(ConfigResource.Type.BROKER, server.config.serverConfig.brokerId.toString)
     }
     val describeOptions = new DescribeConfigsOptions().includeSynonyms(true)
     val describeResult = adminClient.describeConfigs(configResources.asJava, describeOptions).all.get
@@ -1514,7 +1514,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
   @nowarn("cat=deprecation")
   private def alterAdvertisedListener(adminClient: Admin, externalAdminClient: Admin, oldHost: String, newHost: String): Unit = {
     val configs = servers.map { server =>
-      val resource = new ConfigResource(ConfigResource.Type.BROKER, server.config.brokerId.toString)
+      val resource = new ConfigResource(ConfigResource.Type.BROKER, server.config.serverConfig.brokerId.toString)
       val newListeners = server.config.effectiveAdvertisedBrokerListeners.map { e =>
         if (e.listenerName.value == SecureExternal)
           s"${e.listenerName.value}://$newHost:${server.boundPort(e.listenerName)}"
@@ -1542,7 +1542,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
   private def alterConfigsOnServer(server: KafkaBroker, props: Properties): Unit = {
     val configEntries = props.asScala.map { case (k, v) => new ConfigEntry(k, v) }.toList.asJava
     val newConfig = new Config(configEntries)
-    val configs = Map(new ConfigResource(ConfigResource.Type.BROKER, server.config.brokerId.toString) -> newConfig).asJava
+    val configs = Map(new ConfigResource(ConfigResource.Type.BROKER, server.config.serverConfig.brokerId.toString) -> newConfig).asJava
     adminClients.head.alterConfigs(configs).all.get
     props.asScala.foreach { case (k, v) => waitForConfigOnServer(server, k, v) }
   }
@@ -1554,7 +1554,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
     val newConfig = new Config(configEntries)
     val configs = if (perBrokerConfig) {
       servers.map { server =>
-        val resource = new ConfigResource(ConfigResource.Type.BROKER, server.config.brokerId.toString)
+        val resource = new ConfigResource(ConfigResource.Type.BROKER, server.config.serverConfig.brokerId.toString)
         (resource, newConfig)
       }.toMap.asJava
     } else {
@@ -1568,7 +1568,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
     if (expectFailure) {
       val oldProps = servers.head.config.values.asScala.filter { case (k, _) => newProps.containsKey(k) }
       val brokerResources = if (perBrokerConfig)
-        servers.map(server => new ConfigResource(ConfigResource.Type.BROKER, server.config.brokerId.toString))
+        servers.map(server => new ConfigResource(ConfigResource.Type.BROKER, server.config.serverConfig.brokerId.toString))
       else
         Seq(new ConfigResource(ConfigResource.Type.BROKER, ""))
       brokerResources.foreach { brokerResource =>
@@ -1599,7 +1599,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
     zkClient.makeSurePersistentPathExists(ConfigEntityChangeNotificationZNode.path)
 
     val entityType = ConfigType.BROKER
-    val entityName = kafkaConfig.brokerId.toString
+    val entityName = kafkaConfig.serverConfig.brokerId.toString
 
     val passwordConfigs = sslStoreProps.asScala.keySet.filter(DynamicBrokerConfig.isPasswordConfig)
     val passwordEncoder = createPasswordEncoder(kafkaConfig, kafkaConfig.passwordEncoderSecret)
@@ -1613,7 +1613,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
     sslStoreProps.remove(PasswordEncoderConfigs.PASSWORD_ENCODER_SECRET_CONFIG)
     adminZkClient.changeConfigs(entityType, entityName, sslStoreProps)
 
-    val brokerProps = adminZkClient.fetchEntityConfig("brokers", kafkaConfig.brokerId.toString)
+    val brokerProps = adminZkClient.fetchEntityConfig("brokers", kafkaConfig.serverConfig.brokerId.toString)
     assertEquals(4, brokerProps.size)
     assertEquals(sslProperties.get(SSL_KEYSTORE_TYPE_CONFIG),
       brokerProps.getProperty(s"$externalListenerPrefix$SSL_KEYSTORE_TYPE_CONFIG"))
@@ -1761,7 +1761,7 @@ class DynamicBrokerReconfigurationTest extends QuorumTestHarness with SaslSetup 
         "--command-config", propsFile.getAbsolutePath,
         "--alter", "--add-config", props.asScala.map { case (k, v) => s"$k=$v" }.mkString(","),
         "--entity-type", "brokers",
-        "--entity-name", server.config.brokerId.toString)
+        "--entity-name", server.config.serverConfig.brokerId.toString)
       ConfigCommand.main(args)
     }
   }

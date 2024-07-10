@@ -167,12 +167,12 @@ class DynamicBrokerConfigTest {
 
     props.put(ServerConfigs.NUM_IO_THREADS_CONFIG, "8")
     config.dynamicConfig.updateDefaultConfig(props)
-    assertEquals(8, config.numIoThreads)
+    assertEquals(8, config.serverConfig.numIoThreads)
     Mockito.verify(handlerPoolMock).resizeThreadPool(newSize = 8)
 
     props.put(ServerConfigs.NUM_NETWORK_THREADS_CONFIG, "4")
     config.dynamicConfig.updateDefaultConfig(props)
-    assertEquals(4, config.numNetworkThreads)
+    assertEquals(4, config.serverConfig.numNetworkThreads)
     val captor: ArgumentCaptor[JMap[String, String]] = ArgumentCaptor.forClass(classOf[JMap[String, String]])
     Mockito.verify(acceptorMock).reconfigure(captor.capture())
     assertTrue(captor.getValue.containsKey(ServerConfigs.NUM_NETWORK_THREADS_CONFIG))
@@ -190,7 +190,7 @@ class DynamicBrokerConfigTest {
 
     props.put(ServerConfigs.BACKGROUND_THREADS_CONFIG, "6")
     config.dynamicConfig.updateDefaultConfig(props)
-    assertEquals(6, config.backgroundThreads)
+    assertEquals(6, config.serverConfig.backgroundThreads)
     Mockito.verify(schedulerMock).resizeThreadPool(6)
 
     Mockito.verifyNoMoreInteractions(
@@ -635,7 +635,7 @@ class DynamicBrokerConfigTest {
     config.dynamicConfig.initialize(None, None)
 
     assertEquals(SocketServerConfigs.MAX_CONNECTIONS_DEFAULT, config.maxConnections)
-    assertEquals(LogConfig.DEFAULT_MAX_MESSAGE_BYTES, config.messageMaxBytes)
+    assertEquals(LogConfig.DEFAULT_MAX_MESSAGE_BYTES, config.serverConfig.messageMaxBytes)
 
     var newProps = new Properties()
     newProps.put(SocketServerConfigs.MAX_CONNECTIONS_CONFIG, "9999")
@@ -643,7 +643,7 @@ class DynamicBrokerConfigTest {
 
     config.dynamicConfig.updateDefaultConfig(newProps)
     assertEquals(9999, config.maxConnections)
-    assertEquals(2222, config.messageMaxBytes)
+    assertEquals(2222, config.serverConfig.messageMaxBytes)
 
     newProps = new Properties()
     newProps.put(SocketServerConfigs.MAX_CONNECTIONS_CONFIG, "INVALID_INT")
@@ -653,7 +653,7 @@ class DynamicBrokerConfigTest {
     // Invalid value should be skipped and reassigned as default value
     assertEquals(SocketServerConfigs.MAX_CONNECTIONS_DEFAULT, config.maxConnections)
     // Even if One property is invalid, the below should get correctly updated.
-    assertEquals(1111, config.messageMaxBytes)
+    assertEquals(1111, config.serverConfig.messageMaxBytes)
   }
 
   @Test
@@ -994,15 +994,15 @@ class TestDynamicThreadPool() extends BrokerReconfigurable {
   }
 
   override def reconfigure(oldConfig: KafkaConfig, newConfig: KafkaConfig): Unit = {
-    assertEquals(ServerConfigs.NUM_IO_THREADS_DEFAULT, oldConfig.numIoThreads)
-    assertEquals(ServerConfigs.BACKGROUND_THREADS_DEFAULT, oldConfig.backgroundThreads)
+    assertEquals(ServerConfigs.NUM_IO_THREADS_DEFAULT, oldConfig.serverConfig.numIoThreads)
+    assertEquals(ServerConfigs.BACKGROUND_THREADS_DEFAULT, oldConfig.serverConfig.backgroundThreads)
 
-    assertEquals(10, newConfig.numIoThreads)
-    assertEquals(100, newConfig.backgroundThreads)
+    assertEquals(10, newConfig.serverConfig.numIoThreads)
+    assertEquals(100, newConfig.serverConfig.backgroundThreads)
   }
 
   override def validateReconfiguration(newConfig: KafkaConfig): Unit = {
-    assertEquals(10, newConfig.numIoThreads)
-    assertEquals(100, newConfig.backgroundThreads)
+    assertEquals(10, newConfig.serverConfig.numIoThreads)
+    assertEquals(100, newConfig.serverConfig.backgroundThreads)
   }
 }

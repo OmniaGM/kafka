@@ -97,7 +97,7 @@ class KafkaRaftServer(
     // the controller endpoints are passed to the KRaft manager
     controller.foreach(_.startup())
     broker.foreach(_.startup())
-    AppInfoParser.registerAppInfo(Server.MetricsPrefix, config.brokerId.toString, metrics, time.milliseconds())
+    AppInfoParser.registerAppInfo(Server.MetricsPrefix, config.serverConfig.brokerId.toString, metrics, time.milliseconds())
     info(KafkaBroker.STARTED_MESSAGE)
   }
 
@@ -107,7 +107,7 @@ class KafkaRaftServer(
     // stops the raft client early on, which would disrupt broker shutdown.
     broker.foreach(_.shutdown())
     controller.foreach(_.shutdown())
-    CoreUtils.swallow(AppInfoParser.unregisterAppInfo(Server.MetricsPrefix, config.brokerId.toString, metrics), this)
+    CoreUtils.swallow(AppInfoParser.unregisterAppInfo(Server.MetricsPrefix, config.serverConfig.brokerId.toString, metrics), this)
   }
 
   override def awaitShutdown(): Unit = {

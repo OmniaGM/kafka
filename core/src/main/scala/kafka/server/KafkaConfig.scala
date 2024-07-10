@@ -233,6 +233,10 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   private val _groupCoordinatorConfig = new GroupCoordinatorConfig(this)
   def groupCoordinatorConfig: GroupCoordinatorConfig = _groupCoordinatorConfig
 
+  private val _serverConfig = new ServerConfigs(this)
+
+  def serverConfig: ServerConfigs = _serverConfig
+
   private def zkBooleanConfigOrSystemPropertyWithDefaultValue(propKey: String): Boolean = {
     // Use the system property if it exists and the Kafka config value was defaulted rather than actually provided
     // Need to translate any system property value from true/false (String) to true/false (Boolean)
@@ -305,9 +309,6 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   val ZkSslCrlEnable = zkBooleanConfigOrSystemPropertyWithDefaultValue(ZkConfigs.ZK_SSL_CRL_ENABLE_CONFIG)
   val ZkSslOcspEnable = zkBooleanConfigOrSystemPropertyWithDefaultValue(ZkConfigs.ZK_SSL_OCSP_ENABLE_CONFIG)
   /** ********* General Configuration ***********/
-  val brokerIdGenerationEnable: Boolean = getBoolean(ServerConfigs.BROKER_ID_GENERATION_ENABLE_CONFIG)
-  val maxReservedBrokerId: Int = getInt(ServerConfigs.RESERVED_BROKER_MAX_ID_CONFIG)
-  var brokerId: Int = getInt(ServerConfigs.BROKER_ID_CONFIG)
   val nodeId: Int = getInt(KRaftConfigs.NODE_ID_CONFIG)
   val initialRegistrationTimeoutMs: Int = getInt(KRaftConfigs.INITIAL_BROKER_REGISTRATION_TIMEOUT_MS_CONFIG)
   val brokerHeartbeatIntervalMs: Int = getInt(KRaftConfigs.BROKER_HEARTBEAT_INTERVAL_MS_CONFIG)
@@ -357,18 +358,8 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   def metadataLogSegmentMinBytes = getInt(KRaftConfigs.METADATA_LOG_SEGMENT_MIN_BYTES_CONFIG)
   val serverMaxStartupTimeMs = getLong(KRaftConfigs.SERVER_MAX_STARTUP_TIME_MS_CONFIG)
 
-  def numNetworkThreads = getInt(ServerConfigs.NUM_NETWORK_THREADS_CONFIG)
-  def backgroundThreads = getInt(ServerConfigs.BACKGROUND_THREADS_CONFIG)
-  val queuedMaxRequests = getInt(ServerConfigs.QUEUED_MAX_REQUESTS_CONFIG)
-  val queuedMaxBytes = getLong(ServerConfigs.QUEUED_MAX_BYTES_CONFIG)
-  def numIoThreads = getInt(ServerConfigs.NUM_IO_THREADS_CONFIG)
-  def messageMaxBytes = getInt(ServerConfigs.MESSAGE_MAX_BYTES_CONFIG)
-  val requestTimeoutMs = getInt(ServerConfigs.REQUEST_TIMEOUT_MS_CONFIG)
-  val connectionSetupTimeoutMs = getLong(ServerConfigs.SOCKET_CONNECTION_SETUP_TIMEOUT_MS_CONFIG)
-  val connectionSetupTimeoutMaxMs = getLong(ServerConfigs.SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS_CONFIG)
-
   def getNumReplicaAlterLogDirsThreads: Int = {
-    val numThreads: Integer = Option(getInt(ServerConfigs.NUM_REPLICA_ALTER_LOG_DIRS_THREADS_CONFIG)).getOrElse(logDirs.size)
+    val numThreads: Integer = _serverConfig.numReplicaAlterLogDirsThread().orElse(logDirs.size)
     numThreads
   }
 
@@ -382,7 +373,7 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
 
   /************* Authorizer Configuration ***********/
   def createNewAuthorizer(): Option[Authorizer] = {
-    val className = getString(ServerConfigs.AUTHORIZER_CLASS_NAME_CONFIG)
+    val className = _serverConfig.authorizerClassName()
     if (className == null || className.isEmpty)
       None
     else {
@@ -393,7 +384,7 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   val earlyStartListeners: Set[ListenerName] = {
     val listenersSet = listeners.map(_.listenerName).toSet
     val controllerListenersSet = controllerListeners.map(_.listenerName).toSet
-    Option(getString(ServerConfigs.EARLY_START_LISTENERS_CONFIG)) match {
+    _serverConfig.earlyStartListeners.asScala match {
       case None => controllerListenersSet
       case Some(str) =>
         str.split(",").map(_.trim()).filterNot(_.isEmpty).map { str =>
@@ -421,7 +412,6 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   val failedAuthenticationDelayMs = getInt(SocketServerConfigs.FAILED_AUTHENTICATION_DELAY_MS_CONFIG)
 
   /***************** rack configuration **************/
-  val rack = Option(getString(ServerConfigs.BROKER_RACK_CONFIG))
   val replicaSelectorClassName = Option(getString(ReplicationConfigs.REPLICA_SELECTOR_CLASS_CONFIG))
 
   /** ********* Log Configuration ***********/
@@ -551,11 +541,6 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
     MetadataVersion.MINIMUM_KRAFT_VERSION
   }
 
-  /** ********* Controlled shutdown configuration ***********/
-  val controlledShutdownMaxRetries = getInt(ServerConfigs.CONTROLLED_SHUTDOWN_MAX_RETRIES_CONFIG)
-  val controlledShutdownRetryBackoffMs = getLong(ServerConfigs.CONTROLLED_SHUTDOWN_RETRY_BACKOFF_MS_CONFIG)
-  val controlledShutdownEnable = getBoolean(ServerConfigs.CONTROLLED_SHUTDOWN_ENABLE_CONFIG)
-
   /** ********* Feature configuration ***********/
   def isFeatureVersioningSupported = interBrokerProtocolVersion.isFeatureVersioningSupported
 
@@ -665,20 +650,6 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   val numControllerQuotaSamples = getInt(QuotaConfigs.NUM_CONTROLLER_QUOTA_SAMPLES_CONFIG)
   val controllerQuotaWindowSizeSeconds = getInt(QuotaConfigs.CONTROLLER_QUOTA_WINDOW_SIZE_SECONDS_CONFIG)
 
-  /** ********* Fetch Configuration **************/
-  val maxIncrementalFetchSessionCacheSlots = getInt(ServerConfigs.MAX_INCREMENTAL_FETCH_SESSION_CACHE_SLOTS_CONFIG)
-  val fetchMaxBytes = getInt(ServerConfigs.FETCH_MAX_BYTES_CONFIG)
-
-  /** ********* Request Limit Configuration ***********/
-  val maxRequestPartitionSizeLimit = getInt(ServerConfigs.MAX_REQUEST_PARTITION_SIZE_LIMIT_CONFIG)
-
-  val deleteTopicEnable = getBoolean(ServerConfigs.DELETE_TOPIC_ENABLE_CONFIG)
-  def compressionType = getString(ServerConfigs.COMPRESSION_TYPE_CONFIG)
-
-  def gzipCompressionLevel = getInt(ServerConfigs.COMPRESSION_GZIP_LEVEL_CONFIG)
-  def lz4CompressionLevel = getInt(ServerConfigs.COMPRESSION_LZ4_LEVEL_CONFIG)
-  def zstdCompressionLevel = getInt(ServerConfigs.COMPRESSION_ZSTD_LEVEL_CONFIG)
-
   /** ********* Raft Quorum Configuration *********/
   val quorumVoters = getList(QuorumConfig.QUORUM_VOTERS_CONFIG)
   val quorumBootstrapServers = getList(QuorumConfig.QUORUM_BOOTSTRAP_SERVERS_CONFIG)
@@ -688,10 +659,6 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
   val quorumLingerMs = getInt(QuorumConfig.QUORUM_LINGER_MS_CONFIG)
   val quorumRequestTimeoutMs = getInt(QuorumConfig.QUORUM_REQUEST_TIMEOUT_MS_CONFIG)
   val quorumRetryBackoffMs = getInt(QuorumConfig.QUORUM_RETRY_BACKOFF_MS_CONFIG)
-
-  /** Internal Configurations **/
-  val unstableApiVersionsEnabled = getBoolean(ServerConfigs.UNSTABLE_API_VERSIONS_ENABLE_CONFIG)
-  val unstableFeatureVersionsEnabled = getBoolean(ServerConfigs.UNSTABLE_FEATURE_VERSIONS_ENABLE_CONFIG)
 
   def addReconfigurable(reconfigurable: Reconfigurable): Unit = {
     dynamicConfig.addReconfigurable(reconfigurable)
@@ -853,17 +820,17 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
 
   @nowarn("cat=deprecation")
   private def validateValues(): Unit = {
-    if (nodeId != brokerId) {
+    if (nodeId != _serverConfig.brokerId) {
       throw new ConfigException(s"You must set `${KRaftConfigs.NODE_ID_CONFIG}` to the same value as `${ServerConfigs.BROKER_ID_CONFIG}`.")
     }
     if (requiresZookeeper) {
       if (zkConnect == null) {
         throw new ConfigException(s"Missing required configuration `${ZkConfigs.ZK_CONNECT_CONFIG}` which has no default value.")
       }
-      if (brokerIdGenerationEnable) {
-        require(brokerId >= -1 && brokerId <= maxReservedBrokerId, "broker.id must be greater than or equal to -1 and not greater than reserved.broker.max.id")
+      if (_serverConfig.brokerIdGenerationEnable) {
+        require(_serverConfig.brokerId >= -1 && _serverConfig.brokerId <= _serverConfig.maxReservedBrokerId, "broker.id must be greater than or equal to -1 and not greater than reserved.broker.max.id")
       } else {
-        require(brokerId >= 0, "broker.id must be greater than or equal to 0")
+        require(_serverConfig.brokerId >= 0, "broker.id must be greater than or equal to 0")
       }
     } else {
       // KRaft-based metadata quorum
@@ -1048,7 +1015,7 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
       s"Only GSSAPI mechanism is supported for inter-broker communication with SASL when inter.broker.protocol.version is set to $interBrokerProtocolVersionString")
     require(!interBrokerUsesSasl || saslEnabledMechanisms(interBrokerListenerName).contains(saslMechanismInterBrokerProtocol),
       s"${BrokerSecurityConfigs.SASL_MECHANISM_INTER_BROKER_PROTOCOL_CONFIG} must be included in ${BrokerSecurityConfigs.SASL_ENABLED_MECHANISMS_CONFIG} when SASL is used for inter-broker communication")
-    require(queuedMaxBytes <= 0 || queuedMaxBytes >= socketRequestMaxBytes,
+    require(_serverConfig.queuedMaxBytes <= 0 || _serverConfig.queuedMaxBytes >= socketRequestMaxBytes,
       s"${ServerConfigs.QUEUED_MAX_BYTES_CONFIG} must be larger or equal to ${SocketServerConfigs.SOCKET_REQUEST_MAX_BYTES_CONFIG}")
 
     if (maxConnectionsPerIp == 0)
@@ -1129,7 +1096,7 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
     logProps.put(TopicConfig.FLUSH_MS_CONFIG, logFlushIntervalMs)
     logProps.put(TopicConfig.RETENTION_BYTES_CONFIG, logRetentionBytes)
     logProps.put(TopicConfig.RETENTION_MS_CONFIG, logRetentionTimeMillis: java.lang.Long)
-    logProps.put(TopicConfig.MAX_MESSAGE_BYTES_CONFIG, messageMaxBytes)
+    logProps.put(TopicConfig.MAX_MESSAGE_BYTES_CONFIG, _serverConfig.messageMaxBytes: java.lang.Integer)
     logProps.put(TopicConfig.INDEX_INTERVAL_BYTES_CONFIG, logIndexIntervalBytes)
     logProps.put(TopicConfig.DELETE_RETENTION_MS_CONFIG, logCleanerDeleteRetentionMs)
     logProps.put(TopicConfig.MIN_COMPACTION_LAG_MS_CONFIG, logCleanerMinCompactionLagMs)
@@ -1138,10 +1105,10 @@ class KafkaConfig private(doLog: Boolean, val props: util.Map[_, _])
     logProps.put(TopicConfig.MIN_CLEANABLE_DIRTY_RATIO_CONFIG, logCleanerMinCleanRatio)
     logProps.put(TopicConfig.CLEANUP_POLICY_CONFIG, logCleanupPolicy)
     logProps.put(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, minInSyncReplicas)
-    logProps.put(TopicConfig.COMPRESSION_TYPE_CONFIG, compressionType)
-    logProps.put(TopicConfig.COMPRESSION_GZIP_LEVEL_CONFIG, gzipCompressionLevel)
-    logProps.put(TopicConfig.COMPRESSION_LZ4_LEVEL_CONFIG, lz4CompressionLevel)
-    logProps.put(TopicConfig.COMPRESSION_ZSTD_LEVEL_CONFIG, zstdCompressionLevel)
+    logProps.put(TopicConfig.COMPRESSION_TYPE_CONFIG, _serverConfig.compressionType)
+    logProps.put(TopicConfig.COMPRESSION_GZIP_LEVEL_CONFIG, _serverConfig.gzipCompressionLevel: java.lang.Integer)
+    logProps.put(TopicConfig.COMPRESSION_LZ4_LEVEL_CONFIG, _serverConfig.lz4CompressionLevel: java.lang.Integer)
+    logProps.put(TopicConfig.COMPRESSION_ZSTD_LEVEL_CONFIG, _serverConfig.zstdCompressionLevel: java.lang.Integer)
     logProps.put(TopicConfig.UNCLEAN_LEADER_ELECTION_ENABLE_CONFIG, uncleanLeaderElectionEnable)
     logProps.put(TopicConfig.PREALLOCATE_CONFIG, logPreAllocateEnable)
     logProps.put(TopicConfig.MESSAGE_FORMAT_VERSION_CONFIG, logMessageFormatVersion.version)

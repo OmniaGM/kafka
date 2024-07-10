@@ -78,7 +78,7 @@ abstract class BaseRequestTest extends IntegrationTestHarness {
 
   def brokerSocketServer(brokerId: Int): SocketServer = {
     brokers.find { broker =>
-      broker.config.brokerId == brokerId
+      broker.config.serverConfig.brokerId == brokerId
     }.map(_.socketServer).getOrElse(throw new IllegalStateException(s"Could not find broker with id $brokerId"))
   }
 

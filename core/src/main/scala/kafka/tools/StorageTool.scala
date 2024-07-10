@@ -119,7 +119,7 @@ object StorageTool extends Logging {
       metadataVersion,
       featureNamesAndLevelsMap,
       Features.PRODUCTION_FEATURES.asScala.toList,
-      config.unstableFeatureVersionsEnabled,
+      config.serverConfig.unstableFeatureVersionsEnabled,
       releaseVersionFlagSpecified
     )
     getUserScramCredentialRecords(namespace).foreach(userScramCredentialRecords => {
@@ -145,7 +145,7 @@ object StorageTool extends Logging {
       throw new TerseFailure(s"Must specify a valid KRaft metadata.version of at least ${MetadataVersion.IBP_3_0_IV0}.")
     }
     if (!metadataVersion.isProduction) {
-      if (config.unstableFeatureVersionsEnabled) {
+      if (config.serverConfig.unstableFeatureVersionsEnabled) {
         System.out.println(s"WARNING: using pre-production metadata.version $metadataVersion.")
       } else {
         throw new TerseFailure(s"The metadata.version $metadataVersion is not ready for production use yet.")

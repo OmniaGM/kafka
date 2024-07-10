@@ -95,12 +95,12 @@ class TopicConfigHandler(private val replicaManager: ReplicaManager,
 
     def updateThrottledList(prop: String, quotaManager: ReplicationQuotaManager): Unit = {
       if (topicConfig.containsKey(prop) && topicConfig.getProperty(prop).nonEmpty) {
-        val partitions = parseThrottledPartitions(topicConfig, kafkaConfig.brokerId, prop)
+        val partitions = parseThrottledPartitions(topicConfig, kafkaConfig.serverConfig.brokerId, prop)
         quotaManager.markThrottled(topic, partitions)
-        debug(s"Setting $prop on broker ${kafkaConfig.brokerId} for topic: $topic and partitions $partitions")
+        debug(s"Setting $prop on broker ${kafkaConfig.serverConfig.brokerId} for topic: $topic and partitions $partitions")
       } else {
         quotaManager.removeThrottle(topic)
-        debug(s"Removing $prop from broker ${kafkaConfig.brokerId} for topic $topic")
+        debug(s"Removing $prop from broker ${kafkaConfig.serverConfig.brokerId} for topic $topic")
       }
     }
     updateThrottledList(QuotaConfigs.LEADER_REPLICATION_THROTTLED_REPLICAS_CONFIG, quotas.leader)
@@ -239,8 +239,8 @@ class BrokerConfigHandler(private val brokerConfig: KafkaConfig,
   def processConfigChanges(brokerId: String, properties: Properties): Unit = {
     if (brokerId == ZooKeeperInternals.DEFAULT_STRING)
       brokerConfig.dynamicConfig.updateDefaultConfig(properties)
-    else if (brokerConfig.brokerId == brokerId.trim.toInt) {
-      brokerConfig.dynamicConfig.updateBrokerConfig(brokerConfig.brokerId, properties)
+    else if (brokerConfig.serverConfig.brokerId == brokerId.trim.toInt) {
+      brokerConfig.dynamicConfig.updateBrokerConfig(brokerConfig.serverConfig.brokerId, properties)
     }
     val updatedDynamicBrokerConfigs = brokerConfig.dynamicConfig.currentDynamicBrokerConfigs
     val updatedDynamicDefaultConfigs = brokerConfig.dynamicConfig.currentDynamicDefaultConfigs

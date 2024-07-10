@@ -505,10 +505,10 @@ class DynamicConfigChangeTest extends KafkaServerTestHarness {
   @ValueSource(strings = Array("zk", "kraft"))
   def testBrokerIdConfigChangeAndDelete(quorum: String): Unit = {
     val newValue: Long = 100000L
-    val brokerId: String = this.brokers.head.config.brokerId.toString
+    val brokerId: String = this.brokers.head.config.serverConfig.brokerId.toString
     setBrokerConfigs(brokerId, newValue)
     for (b <- this.brokers) {
-      val value = if (b.config.brokerId.toString == brokerId) newValue else QuotaConfigs.QUOTA_BYTES_PER_SECOND_DEFAULT
+      val value = if (b.config.serverConfig.brokerId.toString == brokerId) newValue else QuotaConfigs.QUOTA_BYTES_PER_SECOND_DEFAULT
       TestUtils.retry(10000) {
         assertEquals(value, b.quotaManagers.leader.upperBound)
         assertEquals(value, b.quotaManagers.follower.upperBound)
@@ -552,12 +552,12 @@ class DynamicConfigChangeTest extends KafkaServerTestHarness {
   @ValueSource(strings = Array("zk", "kraft"))
   def testDefaultAndBrokerIdConfigChange(quorum: String): Unit = {
     val newValue: Long = 100000L
-    val brokerId: String = this.brokers.head.config.brokerId.toString
+    val brokerId: String = this.brokers.head.config.serverConfig.brokerId.toString
     setBrokerConfigs(brokerId, newValue)
     val newDefaultValue: Long = 200000L
     setBrokerConfigs("", newDefaultValue)
     for (b <- this.brokers) {
-      val value = if (b.config.brokerId.toString == brokerId) newValue else newDefaultValue
+      val value = if (b.config.serverConfig.brokerId.toString == brokerId) newValue else newDefaultValue
       TestUtils.retry(10000) {
         assertEquals(value, b.quotaManagers.leader.upperBound)
         assertEquals(value, b.quotaManagers.follower.upperBound)

@@ -57,7 +57,7 @@ object ApiVersionManager {
       forwardingManager,
       supportedFeatures,
       metadataCache,
-      config.unstableApiVersionsEnabled,
+      config.serverConfig.unstableApiVersionsEnabled,
       config.migrationEnabled,
       clientMetricsManager
     )
@@ -71,7 +71,7 @@ object ApiVersionManager {
  * @param listenerType the listener type
  * @param enabledApis the enabled apis, which are computed by the listener type
  * @param brokerFeatures the broker features
- * @param enableUnstableLastVersion whether to enable unstable last version, see [[KafkaConfig.unstableApiVersionsEnabled]]
+ * @param enableUnstableLastVersion whether to enable unstable last version, see [[KafkaConfig.serverConfig.unstableApiVersionsEnabled]]
  * @param zkMigrationEnabled whether to enable zk migration, see [[KafkaConfig.migrationEnabled]]
  * @param featuresProvider a provider to the finalized features supported
  */
@@ -126,7 +126,7 @@ class SimpleApiVersionManager(
  * @param forwardingManager the forwarding manager,
  * @param brokerFeatures the broker features
  * @param metadataCache the metadata cache, used to get the finalized features and the metadata version
- * @param enableUnstableLastVersion whether to enable unstable last version, see [[KafkaConfig.unstableApiVersionsEnabled]]
+ * @param enableUnstableLastVersion whether to enable unstable last version, see [[KafkaConfig.serverConfig.unstableApiVersionsEnabled]]
  * @param zkMigrationEnabled whether to enable zk migration, see [[KafkaConfig.migrationEnabled]]
  * @param clientMetricsManager the client metrics manager, helps to determine whether client telemetry is enabled
  */

@@ -80,7 +80,7 @@ class LogDirFailureTest extends IntegrationTestHarness {
     val partition = new TopicPartition(topic, 0)
 
     val leaderServerId = producer.partitionsFor(topic).asScala.find(_.partition() == 0).get.leader().id()
-    val leaderServer = brokers.find(_.config.brokerId == leaderServerId).get
+    val leaderServer = brokers.find(_.config.serverConfig.brokerId == leaderServerId).get
 
     // shut down the controller to simulate the case where the broker is not able to send the log dir notification
     controllerServer.shutdown()
@@ -153,9 +153,9 @@ class LogDirFailureTest extends IntegrationTestHarness {
 
     val partitionInfo = producer.partitionsFor(topic).asScala.find(_.partition() == 0).get
     val leaderServerId = partitionInfo.leader().id()
-    val leaderServer = brokers.find(_.config.brokerId == leaderServerId).get
+    val leaderServer = brokers.find(_.config.serverConfig.brokerId == leaderServerId).get
     val followerServerId = partitionInfo.replicas().map(_.id()).find(_ != leaderServerId).get
-    val followerServer = brokers.find(_.config.brokerId == followerServerId).get
+    val followerServer = brokers.find(_.config.serverConfig.brokerId == followerServerId).get
 
     followerServer.replicaManager.markPartitionOffline(partition)
     // Send a message to another partition whose leader is the same as partition 0
@@ -186,7 +186,7 @@ class LogDirFailureTest extends IntegrationTestHarness {
     val record = new ProducerRecord(topic, 0, s"key".getBytes, s"value".getBytes)
 
     val leaderServerId = producer.partitionsFor(topic).asScala.find(_.partition() == 0).get.leader().id()
-    val leaderServer = brokers.find(_.config.brokerId == leaderServerId).get
+    val leaderServer = brokers.find(_.config.serverConfig.brokerId == leaderServerId).get
 
     TestUtils.causeLogDirFailure(failureType, leaderServer, partition)
 
@@ -207,7 +207,7 @@ class LogDirFailureTest extends IntegrationTestHarness {
     val record = new ProducerRecord(topic, 0, s"key".getBytes, s"value".getBytes)
 
     val originalLeaderServerId = producer.partitionsFor(topic).asScala.find(_.partition() == 0).get.leader().id()
-    val originalLeaderServer = brokers.find(_.config.brokerId == originalLeaderServerId).get
+    val originalLeaderServer = brokers.find(_.config.serverConfig.brokerId == originalLeaderServerId).get
 
     // The first send() should succeed
     producer.send(record).get()

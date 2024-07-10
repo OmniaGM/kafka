@@ -64,7 +64,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
   @ValueSource(strings = Array("zk"))
   def testControllerId(quorum: String): Unit = {
     val controllerServer = servers.find(_.kafkaController.isActive).get
-    val controllerId = controllerServer.config.brokerId
+    val controllerId = controllerServer.config.serverConfig.brokerId
     val metadataResponse = sendMetadataRequest(MetadataRequest.Builder.allTopics.build(1.toShort))
 
     assertEquals(controllerId,
@@ -75,7 +75,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
     controllerServer.startup()
 
     val controllerServer2 = servers.find(_.kafkaController.isActive).get
-    val controllerId2 = controllerServer2.config.brokerId
+    val controllerId2 = controllerServer2.config.serverConfig.brokerId
     assertNotEquals(controllerId, controllerId2, "Controller id should switch to a new broker")
     TestUtils.waitUntilTrue(() => {
       val metadataResponse2 = sendMetadataRequest(MetadataRequest.Builder.allTopics.build(1.toShort))
@@ -312,7 +312,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
     val v0MetadataResponse = sendMetadataRequest(new MetadataRequest(requestData(List(replicaDownTopic), allowAutoTopicCreation = true), 0.toShort))
     val v0BrokerIds = v0MetadataResponse.brokers().asScala.map(_.id).toSeq
     assertTrue(v0MetadataResponse.errors.isEmpty, "Response should have no errors")
-    assertFalse(v0BrokerIds.contains(downNode.config.brokerId), s"The downed broker should not be in the brokers list")
+    assertFalse(v0BrokerIds.contains(downNode.config.serverConfig.brokerId), s"The downed broker should not be in the brokers list")
     assertTrue(v0MetadataResponse.topicMetadata.size == 1, "Response should have one topic")
     val v0PartitionMetadata = v0MetadataResponse.topicMetadata.asScala.head.partitionMetadata.asScala.head
     assertTrue(v0PartitionMetadata.error == Errors.REPLICA_NOT_AVAILABLE, "PartitionMetadata should have an error")
@@ -322,7 +322,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
     val v1MetadataResponse = sendMetadataRequest(new MetadataRequest.Builder(List(replicaDownTopic).asJava, true).build(1))
     val v1BrokerIds = v1MetadataResponse.brokers().asScala.map(_.id).toSeq
     assertTrue(v1MetadataResponse.errors.isEmpty, "Response should have no errors")
-    assertFalse(v1BrokerIds.contains(downNode.config.brokerId), s"The downed broker should not be in the brokers list")
+    assertFalse(v1BrokerIds.contains(downNode.config.serverConfig.brokerId), s"The downed broker should not be in the brokers list")
     assertEquals(1, v1MetadataResponse.topicMetadata.size, "Response should have one topic")
     val v1PartitionMetadata = v1MetadataResponse.topicMetadata.asScala.head.partitionMetadata.asScala.head
     assertEquals(Errors.NONE, v1PartitionMetadata.error, "PartitionMetadata should have no errors")
@@ -337,14 +337,14 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
       topic: String
     ): Unit = {
       val activeBrokers = brokers.filter(_.brokerState != BrokerState.NOT_RUNNING)
-      val expectedIsr = activeBrokers.map(_.config.brokerId).toSet
+      val expectedIsr = activeBrokers.map(_.config.serverConfig.brokerId).toSet
 
       // Assert that topic metadata at new brokers is updated correctly
       activeBrokers.foreach { broker =>
         var actualIsr = Set.empty[Int]
         TestUtils.waitUntilTrue(() => {
           val metadataResponse = sendMetadataRequest(new MetadataRequest.Builder(Seq(topic).asJava, false).build,
-            Some(brokerSocketServer(broker.config.brokerId)))
+            Some(brokerSocketServer(broker.config.serverConfig.brokerId)))
           val firstPartitionMetadata = metadataResponse.topicMetadata.asScala.headOption.flatMap(_.partitionMetadata.asScala.headOption)
           actualIsr = firstPartitionMetadata.map { partitionMetadata =>
             partitionMetadata.inSyncReplicaIds.asScala.map(Int.unbox).toSet
@@ -388,7 +388,7 @@ class MetadataRequestTest extends AbstractMetadataRequestTest {
       brokers.filter(_.brokerState == BrokerState.RUNNING).foreach { broker =>
         TestUtils.waitUntilTrue(() => {
           val metadataResponse = sendMetadataRequest(MetadataRequest.Builder.allTopics.build,
-            Some(brokerSocketServer(broker.config.brokerId)))
+            Some(brokerSocketServer(broker.config.serverConfig.brokerId)))
           val brokers = metadataResponse.brokers.asScala.toSeq.sortBy(_.id)
           val topicMetadata = metadataResponse.topicMetadata.asScala.toSeq.sortBy(_.topic)
           brokersSorted == brokers && metadataResponse.topicMetadata.asScala.toSeq.sortBy(_.topic) == topicMetadata

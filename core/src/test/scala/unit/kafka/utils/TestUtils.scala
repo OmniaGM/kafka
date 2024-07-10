@@ -983,7 +983,7 @@ object TestUtils extends Logging {
   def findLeaderEpoch(brokerId: Int,
                       topicPartition: TopicPartition,
                       brokers: Iterable[KafkaBroker]): Int = {
-    val leaderBroker = brokers.find(_.config.brokerId == brokerId)
+    val leaderBroker = brokers.find(_.config.serverConfig.brokerId == brokerId)
     val leaderPartition = leaderBroker.flatMap(_.replicaManager.onlinePartition(topicPartition))
       .getOrElse(throw new AssertionError(s"Failed to find expected replica on broker $brokerId"))
     leaderPartition.getLeaderEpoch
@@ -993,12 +993,12 @@ object TestUtils extends Logging {
                      brokers: Iterable[KafkaBroker]): Int = {
     val followerOpt = brokers.find { server =>
       server.replicaManager.onlinePartition(topicPartition) match {
-        case Some(partition) => !partition.leaderReplicaIdOpt.contains(server.config.brokerId)
+        case Some(partition) => !partition.leaderReplicaIdOpt.contains(server.config.serverConfig.brokerId)
         case None => false
       }
     }
     followerOpt
-      .map(_.config.brokerId)
+      .map(_.config.serverConfig.brokerId)
       .getOrElse(throw new AssertionError(s"Unable to locate follower for $topicPartition"))
   }
 
@@ -1011,7 +1011,7 @@ object TestUtils extends Logging {
   def waitUntilBrokerMetadataIsPropagated[B <: KafkaBroker](
       brokers: Seq[B],
       timeout: Long = JTestUtils.DEFAULT_MAX_WAIT_MS): Unit = {
-    val expectedBrokerIds = brokers.map(_.config.brokerId).toSet
+    val expectedBrokerIds = brokers.map(_.config.serverConfig.brokerId).toSet
     waitUntilTrue(() => brokers.forall(server =>
       expectedBrokerIds == server.dataPlaneRequestProcessor.metadataCache.getAliveBrokers().map(_.id).toSet
     ), "Timed out waiting for broker metadata to propagate to all servers", timeout)
@@ -1107,23 +1107,23 @@ object TestUtils extends Logging {
       if (expectedLeaderOpt.isDefined) {
         debug(s"Checking leader that has changed to ${expectedLeaderOpt.get}")
         brokers.find { broker =>
-          broker.config.brokerId == expectedLeaderOpt.get &&
+          broker.config.serverConfig.brokerId == expectedLeaderOpt.get &&
             broker.replicaManager.onlinePartition(tp).exists(_.leaderLogIfLocal.isDefined)
-        }.map(_.config.brokerId)
+        }.map(_.config.serverConfig.brokerId)
 
       } else if (oldLeaderOpt.isDefined) {
           debug(s"Checking leader that has changed from ${oldLeaderOpt}")
           brokers.find { broker =>
             broker.replicaManager.onlinePartition(tp).exists(_.leaderLogIfLocal.isDefined)
-            broker.config.brokerId != oldLeaderOpt.get &&
+            broker.config.serverConfig.brokerId != oldLeaderOpt.get &&
               broker.replicaManager.onlinePartition(tp).exists(_.leaderLogIfLocal.isDefined)
-          }.map(_.config.brokerId)
+          }.map(_.config.serverConfig.brokerId)
 
       } else {
         debug(s"Checking the elected leader")
         brokers.find { broker =>
             broker.replicaManager.onlinePartition(tp).exists(_.leaderLogIfLocal.isDefined)
-        }.map(_.config.brokerId)
+        }.map(_.config.serverConfig.brokerId)
       }
     }
 
@@ -1140,7 +1140,7 @@ object TestUtils extends Logging {
     def leaderIfExists: Option[Int] = {
       brokers.find { broker =>
         broker.replicaManager.onlinePartition(tp).exists(_.leaderLogIfLocal.isDefined)
-      }.map(_.config.brokerId)
+      }.map(_.config.serverConfig.brokerId)
     }
 
     waitUntilTrue(() => leaderIfExists.isDefined,
@@ -1685,7 +1685,7 @@ object TestUtils extends Logging {
     val configEntries = props.asScala.map { case (k, v) => new AlterConfigOp(new ConfigEntry(k, v), opType) }.toList.asJavaCollection
     val configs = if (perBrokerConfig) {
       servers.map { server =>
-        val resource = new ConfigResource(ConfigResource.Type.BROKER, server.config.brokerId.toString)
+        val resource = new ConfigResource(ConfigResource.Type.BROKER, server.config.serverConfig.brokerId.toString)
         (resource, configEntries)
       }.toMap.asJava
     } else {

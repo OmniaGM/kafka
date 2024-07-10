@@ -147,7 +147,7 @@ public abstract class TieredStorageTestHarness extends IntegrationTestHarness {
                     storages.add((LocalTieredStorage) storageManager);
                 }
             } else {
-                throw new AssertionError("Broker " + broker.config().brokerId()
+                throw new AssertionError("Broker " + broker.config().serverConfig().brokerId()
                         + " does not have a remote log manager.");
             }
         });
@@ -157,7 +157,7 @@ public abstract class TieredStorageTestHarness extends IntegrationTestHarness {
     @SuppressWarnings("deprecation")
     public static List<BrokerLocalStorage> localStorages(Seq<KafkaBroker> brokers) {
         return JavaConverters.seqAsJavaList(brokers).stream()
-                .map(b -> new BrokerLocalStorage(b.config().brokerId(), JavaConverters.setAsJavaSet(b.config().logDirs().toSet()),
+                .map(b -> new BrokerLocalStorage(b.config().serverConfig().brokerId(), JavaConverters.setAsJavaSet(b.config().logDirs().toSet()),
                         STORAGE_WAIT_TIMEOUT_SEC))
                 .collect(Collectors.toList());
     }

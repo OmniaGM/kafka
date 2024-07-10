@@ -241,7 +241,7 @@ class ListOffsetsIntegrationTest extends KafkaServerTestHarness {
       .allTopicNames().get().get(topic).partitions().get(0).leader().id()
 
     val previousLeader = leader()
-    val newLeader = brokers.map(_.config.brokerId).find(_ != previousLeader).get
+    val newLeader = brokers.map(_.config.serverConfig.brokerId).find(_ != previousLeader).get
 
     // change the leader to new one
     adminClient.alterPartitionReassignments(java.util.Collections.singletonMap(new TopicPartition(topic, 0),
@@ -259,7 +259,7 @@ class ListOffsetsIntegrationTest extends KafkaServerTestHarness {
     // case 2: test the offsets from recovery path.
     // server will rebuild offset index according to log files if the index files are nonexistent
     val indexFiles = brokers.flatMap(_.config.logDirs).toSet
-    brokers.foreach(b => killBroker(b.config.brokerId))
+    brokers.foreach(b => killBroker(b.config.serverConfig.brokerId))
     indexFiles.foreach { root =>
       val files = new File(s"$root/$topic-0").listFiles()
       if (files != null) files.foreach { f =>

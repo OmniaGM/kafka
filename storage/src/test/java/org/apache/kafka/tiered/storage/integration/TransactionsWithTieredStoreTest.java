@@ -77,7 +77,7 @@ public class TransactionsWithTieredStoreTest extends TransactionsTest {
     public void maybeWaitForAtLeastOneSegmentUpload(scala.collection.Seq<TopicPartition> topicPartitions) {
         JavaConverters.seqAsJavaList(topicPartitions).forEach(topicPartition -> {
             List<BrokerLocalStorage> localStorages = JavaConverters.bufferAsJavaList(brokers()).stream()
-                    .map(b -> new BrokerLocalStorage(b.config().brokerId(), JavaConverters.setAsJavaSet(b.config().logDirs().toSet()), STORAGE_WAIT_TIMEOUT_SEC))
+                    .map(b -> new BrokerLocalStorage(b.config().serverConfig().brokerId(), JavaConverters.setAsJavaSet(b.config().logDirs().toSet()), STORAGE_WAIT_TIMEOUT_SEC))
                     .collect(Collectors.toList());
             localStorages
                     .stream()
@@ -101,7 +101,7 @@ public class TransactionsWithTieredStoreTest extends TransactionsTest {
                         JavaConverters.mapAsJavaMapConverter(partitionLocalStartOffsets).asJava()
                                 .entrySet().stream().allMatch(entry -> {
                                     long offset = broker.replicaManager().localLog(entry.getKey()).get().localLogStartOffset();
-                                    offsets.put(broker.config().brokerId(), offset);
+                                    offsets.put(broker.config().serverConfig().brokerId(), offset);
                                     return entry.getValue() == offset;
                                 })
                 ), () -> "local log start offset doesn't change to the expected position:" + partitionLocalStartOffsets + ", current position:" + offsets);
@@ -112,7 +112,7 @@ public class TransactionsWithTieredStoreTest extends TransactionsTest {
                                       Integer replicaId) {
         Optional<KafkaBroker> brokerOpt = JavaConverters.seqAsJavaList(brokers())
                 .stream()
-                .filter(b -> b.config().brokerId() == replicaId).findFirst();
+                .filter(b -> b.config().serverConfig().brokerId() == replicaId).findFirst();
         boolean isAssigned = false;
         if (brokerOpt.isPresent()) {
             HostedPartition hostedPartition = brokerOpt.get().replicaManager().getPartition(topicPartition);
@@ -124,6 +124,6 @@ public class TransactionsWithTieredStoreTest extends TransactionsTest {
     }
 
     private boolean isAlive(Integer brokerId) {
-        return aliveBrokers().exists(b -> b.config().brokerId() == brokerId);
+        return aliveBrokers().exists(b -> b.config().serverConfig().brokerId() == brokerId);
     }
 }

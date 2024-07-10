@@ -116,7 +116,7 @@ class RemoteLeaderEndPoint(logPrefix: String,
           .setCurrentLeaderEpoch(currentLeaderEpoch)
           .setTimestamp(timestamp)))
     val metadataVersion = metadataVersionSupplier()
-    val requestBuilder = ListOffsetsRequest.Builder.forReplica(metadataVersion.listOffsetRequestVersion, brokerConfig.brokerId)
+    val requestBuilder = ListOffsetsRequest.Builder.forReplica(metadataVersion.listOffsetRequestVersion, brokerConfig.serverConfig.brokerId)
       .setTargetTimes(Collections.singletonList(topic))
 
     val clientResponse = blockingSender.sendRequest(requestBuilder)
@@ -151,7 +151,7 @@ class RemoteLeaderEndPoint(logPrefix: String,
     }
 
     val epochRequest = OffsetsForLeaderEpochRequest.Builder.forFollower(
-      metadataVersionSupplier().offsetForLeaderEpochRequestVersion, topics, brokerConfig.brokerId)
+      metadataVersionSupplier().offsetForLeaderEpochRequestVersion, topics, brokerConfig.serverConfig.brokerId)
     debug(s"Sending offset for leader epoch request $epochRequest")
 
     try {
@@ -218,7 +218,7 @@ class RemoteLeaderEndPoint(logPrefix: String,
         metadataVersion.fetchRequestVersion
       }
       val requestBuilder = FetchRequest.Builder
-        .forReplica(version, brokerConfig.brokerId, brokerEpochSupplier(), maxWait, minBytes, fetchData.toSend)
+        .forReplica(version, brokerConfig.serverConfig.brokerId, brokerEpochSupplier(), maxWait, minBytes, fetchData.toSend)
         .setMaxBytes(maxBytes)
         .removed(fetchData.toForget)
         .replaced(fetchData.toReplace)

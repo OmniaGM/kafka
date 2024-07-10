@@ -18,7 +18,6 @@
 package kafka.cluster
 
 import java.nio.charset.StandardCharsets
-
 import kafka.zk.BrokerIdZNode
 import org.apache.kafka.common.feature.{Features, SupportedVersionRange}
 import org.apache.kafka.common.feature.Features._
@@ -27,6 +26,7 @@ import org.apache.kafka.common.security.auth.SecurityProtocol
 import org.junit.jupiter.api.Assertions.{assertEquals, assertNotEquals, assertNull}
 import org.junit.jupiter.api.Test
 
+import java.util.Optional
 import scala.jdk.CollectionConverters._
 
 class BrokerEndPointTest {
@@ -110,7 +110,7 @@ class BrokerEndPointTest {
     val brokerEndPoint = broker.brokerEndPoint(ListenerName.forSecurityProtocol(SecurityProtocol.SSL))
     assertEquals("host1", brokerEndPoint.host)
     assertEquals(9093, brokerEndPoint.port)
-    assertEquals(Some("dc1"), broker.rack)
+    assertEquals(Optional.of("dc1"), broker.rack)
   }
 
   @Test
@@ -130,7 +130,7 @@ class BrokerEndPointTest {
     val brokerEndPoint = broker.brokerEndPoint(new ListenerName("CLIENT"))
     assertEquals("host1", brokerEndPoint.host)
     assertEquals(9092, brokerEndPoint.port)
-    assertEquals(None, broker.rack)
+    assertEquals(Optional.empty(), broker.rack)
   }
 
   @Test
@@ -149,7 +149,7 @@ class BrokerEndPointTest {
     val brokerEndPoint = broker.brokerEndPoint(new ListenerName("CLIENT"))
     assertEquals("host1", brokerEndPoint.host)
     assertEquals(9092, brokerEndPoint.port)
-    assertEquals(None, broker.rack)
+    assertEquals(Optional.empty(), broker.rack)
   }
 
   @Test
@@ -169,7 +169,7 @@ class BrokerEndPointTest {
     val brokerEndPoint = broker.brokerEndPoint(new ListenerName("CLIENT"))
     assertEquals("host1", brokerEndPoint.host)
     assertEquals(9092, brokerEndPoint.port)
-    assertEquals(Some("dc1"), broker.rack)
+    assertEquals(Optional.of("dc1"), broker.rack)
     assertEquals(emptySupportedFeatures, broker.features)
   }
 
@@ -191,7 +191,7 @@ class BrokerEndPointTest {
     val brokerEndPoint = broker.brokerEndPoint(new ListenerName("CLIENT"))
     assertEquals("host1", brokerEndPoint.host)
     assertEquals(9092, brokerEndPoint.port)
-    assertEquals(Some("dc1"), broker.rack)
+    assertEquals(Optional.of("dc1"), broker.rack)
     assertEquals(Features.supportedFeatures(
       Map[String, SupportedVersionRange](
         "feature1" -> new SupportedVersionRange(1, 2),

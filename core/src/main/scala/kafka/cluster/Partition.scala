@@ -140,7 +140,7 @@ object Partition {
       _topicId = topicId,
       replicaLagTimeMaxMs = replicaManager.config.replicaLagTimeMaxMs,
       interBrokerProtocolVersion = replicaManager.config.interBrokerProtocolVersion,
-      localBrokerId = replicaManager.config.brokerId,
+      localBrokerId = replicaManager.config.serverConfig.brokerId,
       localBrokerEpochSupplier = replicaManager.brokerEpochSupplier,
       time = time,
       alterPartitionListener = isrChangeListener,

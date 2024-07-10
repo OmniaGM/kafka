@@ -97,7 +97,7 @@ abstract class KafkaServerTestHarness extends QuorumTestHarness {
     instanceConfigs
   }
 
-  def serverForId(id: Int): Option[KafkaServer] = servers.find(s => s.config.brokerId == id)
+  def serverForId(id: Int): Option[KafkaServer] = servers.find(s => s.config.serverConfig.brokerId == id)
 
   def boundPort(server: KafkaServer): Int = server.boundPort(listenerName)
 
@@ -343,7 +343,7 @@ abstract class KafkaServerTestHarness extends QuorumTestHarness {
   def getController(): KafkaServer = {
     checkIsZKTest()
     val controllerId = TestUtils.waitUntilControllerElected(zkClient)
-    servers.filter(s => s.config.brokerId == controllerId).head
+    servers.filter(s => s.config.serverConfig.brokerId == controllerId).head
   }
 
   def getTopicIds(names: Seq[String]): Map[String, Uuid] = {
@@ -401,11 +401,11 @@ abstract class KafkaServerTestHarness extends QuorumTestHarness {
 
   private def createBrokerFromConfig(config: KafkaConfig): KafkaBroker = {
     if (isKRaftTest()) {
-      createBroker(config, brokerTime(config.brokerId), startup = false)
+      createBroker(config, brokerTime(config.serverConfig.brokerId), startup = false)
     } else {
       TestUtils.createServer(
         config,
-        time = brokerTime(config.brokerId),
+        time = brokerTime(config.serverConfig.brokerId),
         threadNamePrefix = None,
         startup = false,
         enableZkApiForwarding = isZkMigrationTest() || (config.migrationEnabled && config.interBrokerProtocolVersion.isApiForwardingEnabled)
@@ -414,7 +414,7 @@ abstract class KafkaServerTestHarness extends QuorumTestHarness {
   }
 
   def aliveBrokers: Seq[KafkaBroker] = {
-    _brokers.filter(broker => alive(broker.config.brokerId)).toSeq
+    _brokers.filter(broker => alive(broker.config.serverConfig.brokerId)).toSeq
   }
 
   def ensureConsistentKRaftMetadata(): Unit = {

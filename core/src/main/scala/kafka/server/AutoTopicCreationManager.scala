@@ -164,7 +164,7 @@ class DefaultAutoTopicCreationManager(
 
     val createTopicsRequest = new CreateTopicsRequest.Builder(
       new CreateTopicsRequestData()
-        .setTimeoutMs(config.requestTimeoutMs)
+        .setTimeoutMs(config.serverConfig.requestTimeoutMs)
         .setTopics(topicsToCreate)
     )
 

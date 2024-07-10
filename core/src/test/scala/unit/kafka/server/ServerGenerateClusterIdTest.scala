@@ -166,7 +166,7 @@ class ServerGenerateClusterIdTest extends QuorumTestHarness {
 
   @Test
   def testInconsistentClusterIdFromZookeeperAndFromMetaProps(): Unit = {
-    forgeBrokerMetadata(config1.logDirs, config1.brokerId, "aclusterid")
+    forgeBrokerMetadata(config1.logDirs, config1.serverConfig.brokerId, "aclusterid")
 
     val server = new KafkaServer(config1, threadNamePrefix = Option(this.getClass.getName))
 

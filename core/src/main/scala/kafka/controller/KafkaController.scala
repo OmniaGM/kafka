@@ -116,13 +116,13 @@ class KafkaController(val config: KafkaConfig,
 
   private val metricsGroup = new KafkaMetricsGroup(this.getClass)
 
-  this.logIdent = s"[Controller id=${config.brokerId}] "
+  this.logIdent = s"[Controller id=${config.serverConfig.brokerId}] "
 
   @volatile private var brokerInfo = initialBrokerInfo
   @volatile private var _brokerEpoch = initialBrokerEpoch
 
   private val isAlterPartitionEnabled = config.interBrokerProtocolVersion.isAlterPartitionSupported
-  private val stateChangeLogger = new StateChangeLogger(config.brokerId, inControllerContext = true, None)
+  private val stateChangeLogger = new StateChangeLogger(config.serverConfig.brokerId, inControllerContext = true, None)
   val controllerContext = new ControllerContext
   var controllerChannelManager = new ControllerChannelManager(
     () => controllerContext.epoch,
@@ -138,7 +138,7 @@ class KafkaController(val config: KafkaConfig,
   private[controller] val kafkaScheduler = new KafkaScheduler(1)
 
   // visible for testing
-  private[controller] val eventManager = new ControllerEventManager(config.brokerId, this, time,
+  private[controller] val eventManager = new ControllerEventManager(config.serverConfig.brokerId, this, time,
     controllerContext.stats.rateAndTimeMetrics)
 
   private val brokerRequestBatch = new ControllerBrokerRequestBatch(config, controllerChannelManager,
@@ -193,7 +193,7 @@ class KafkaController(val config: KafkaConfig,
   /**
    * Returns true if this broker is the current controller.
    */
-  def isActive: Boolean = activeControllerId == config.brokerId
+  def isActive: Boolean = activeControllerId == config.serverConfig.brokerId
 
   def brokerEpoch: Long = _brokerEpoch
 
@@ -1557,12 +1557,12 @@ class KafkaController(val config: KafkaConfig,
     }
 
     try {
-      val (epoch, epochZkVersion) = zkClient.registerControllerAndIncrementControllerEpoch(config.brokerId)
+      val (epoch, epochZkVersion) = zkClient.registerControllerAndIncrementControllerEpoch(config.serverConfig.brokerId)
       controllerContext.epoch = epoch
       controllerContext.epochZkVersion = epochZkVersion
-      activeControllerId = config.brokerId
+      activeControllerId = config.serverConfig.brokerId
 
-      info(s"${config.brokerId} successfully elected as the controller. Epoch incremented to ${controllerContext.epoch} " +
+      info(s"${config.serverConfig.brokerId} successfully elected as the controller. Epoch incremented to ${controllerContext.epoch} " +
         s"and epoch zk version is now ${controllerContext.epochZkVersion}")
 
       onControllerFailover()
@@ -1571,11 +1571,11 @@ class KafkaController(val config: KafkaConfig,
         maybeResign()
 
         if (activeControllerId != -1)
-          debug(s"Broker $activeControllerId was elected as controller instead of broker ${config.brokerId}", e)
+          debug(s"Broker $activeControllerId was elected as controller instead of broker ${config.serverConfig.brokerId}", e)
         else
           warn("A controller has been elected but just resigned, this will result in another round of election", e)
       case t: Throwable =>
-        error(s"Error while electing or becoming controller on broker ${config.brokerId}. " +
+        error(s"Error while electing or becoming controller on broker ${config.serverConfig.brokerId}. " +
           s"Trigger controller movement immediately", t)
         triggerControllerMove()
     }
@@ -1794,7 +1794,7 @@ class KafkaController(val config: KafkaConfig,
       zkClient.deleteTopicDeletions(nonExistentTopics.toSeq, controllerContext.epochZkVersion)
     }
     topicsToBeDeleted --= nonExistentTopics
-    if (config.deleteTopicEnable) {
+    if (config.serverConfig.deleteTopicEnable) {
       if (topicsToBeDeleted.nonEmpty) {
         info(s"Starting topic deletion for topics ${topicsToBeDeleted.mkString(",")}")
         // mark topic ineligible for deletion if other state changes are in progress

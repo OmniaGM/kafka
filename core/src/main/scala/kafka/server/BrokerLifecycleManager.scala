@@ -85,7 +85,7 @@ class BrokerLifecycleManager(
   /**
    * The broker rack, or null if there is no configured rack.
    */
-  private val rack = config.rack
+  private val rack = config.serverConfig.rack
 
   /**
    * How long to wait for registration to succeed before failing the startup process.
@@ -398,7 +398,7 @@ class BrokerLifecycleManager(
         setFeatures(features).
         setIncarnationId(incarnationId).
         setListeners(_advertisedListeners).
-        setRack(rack.orNull).
+        setRack(rack.orElse(null)).
         setPreviousBrokerEpoch(previousBrokerEpoch.orElse(-1L)).
         setLogDirs(sortedLogDirs)
     if (isDebugEnabled) {

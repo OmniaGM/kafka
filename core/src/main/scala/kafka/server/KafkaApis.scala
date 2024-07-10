@@ -1038,7 +1038,7 @@ class KafkaApis(val requestChannel: RequestChannel,
       else
         quotas.fetch.getMaxValueInQuotaWindow(request.session, clientId).toInt
 
-      val fetchMaxBytes = Math.min(Math.min(fetchRequest.maxBytes, config.fetchMaxBytes), maxQuotaWindowBytes)
+      val fetchMaxBytes = Math.min(Math.min(fetchRequest.maxBytes, config.serverConfig.fetchMaxBytes), maxQuotaWindowBytes)
       val fetchMinBytes = Math.min(fetchRequest.minBytes, fetchMaxBytes)
 
       val clientMetadata: Optional[ClientMetadata] = if (versionId >= 11) {
@@ -2154,7 +2154,7 @@ class KafkaApis(val requestChannel: RequestChannel,
           .setErrorCode(Errors.NOT_CONTROLLER.code))
       }
       sendResponseCallback(results)
-    } else if (!config.deleteTopicEnable) {
+    } else if (!config.serverConfig.deleteTopicEnable) {
       val error = if (request.context.apiVersion < 3) Errors.INVALID_REQUEST else Errors.TOPIC_DELETION_DISABLED
       deleteTopicRequest.topics().forEach { topic =>
         results.add(new DeletableTopicResult()
@@ -2486,7 +2486,7 @@ class KafkaApis(val requestChannel: RequestChannel,
               marker.producerEpoch,
               marker.coordinatorEpoch,
               marker.transactionResult,
-              Duration.ofMillis(config.requestTimeoutMs.toLong)
+              Duration.ofMillis(config.serverConfig.requestTimeoutMs.toLong)
             ).whenComplete { (_, exception) =>
               val error = if (exception == null) {
                 Errors.NONE
@@ -2515,7 +2515,7 @@ class KafkaApis(val requestChannel: RequestChannel,
         }
 
         replicaManager.appendRecords(
-          timeout = config.requestTimeoutMs.toLong,
+          timeout = config.serverConfig.requestTimeoutMs.toLong,
           requiredAcks = -1,
           internalTopicsAllowed = true,
           origin = AppendOrigin.COORDINATOR,

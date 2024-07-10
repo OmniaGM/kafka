@@ -173,7 +173,7 @@ class FetchRequestDownConversionConfigTest extends BaseRequestTest {
     val initialFetchTemporaryMemoryBytes = TestUtils.metersCount(fetchTemporaryMemoryBytesMetricName)
     val topicWithDownConversionEnabled = "foo"
     val topicWithDownConversionDisabled = "bar"
-    val replicaIds = brokers.map(_.config.brokerId)
+    val replicaIds = brokers.map(_.config.serverConfig.brokerId)
     val leaderId = replicaIds.head
     val followerId = replicaIds.last
 

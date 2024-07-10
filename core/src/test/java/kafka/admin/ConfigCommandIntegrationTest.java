@@ -476,7 +476,7 @@ public class ConfigCommandIntegrationTest {
         EndPoint endpoint = new EndPoint("localhost", 9092,
                 ListenerName.forSecurityProtocol(securityProtocol), securityProtocol);
         BrokerInfo brokerInfo = BrokerInfo.apply(Broker.apply(id, endpoint,
-                scala.None$.empty()), MetadataVersion.latestTesting(), 9192);
+                Optional.empty()), MetadataVersion.latestTesting(), 9192);
         zkClient.registerBroker(brokerInfo);
     }
 

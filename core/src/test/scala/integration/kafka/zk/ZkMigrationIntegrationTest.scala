@@ -887,7 +887,7 @@ class ZkMigrationIntegrationTest {
       TestUtils.waitUntilTrue(() => {
         val brokers = zkCluster.asInstanceOf[ZkClusterInstance].getUnderlying.brokers
         assertTrue(brokers.size == 4)
-        assertTrue(brokers.head.config.brokerId == 0)
+        assertTrue(brokers.head.config.serverConfig.brokerId == 0)
         brokers.head.replicaManager.onlinePartition(topicPartition).isEmpty
       }, "Timed out waiting for removed replica reassignment to be marked offline")
     } finally {
@@ -1000,7 +1000,7 @@ class ZkMigrationIntegrationTest {
 
   def sendAllocateProducerIds(zkClusterInstance: ZkClusterInstance): CompletableFuture[Long] = {
     val channel = zkClusterInstance.getUnderlying.brokers.head.clientToControllerChannelManager
-    val brokerId = zkClusterInstance.getUnderlying.brokers.head.config.brokerId
+    val brokerId = zkClusterInstance.getUnderlying.brokers.head.config.serverConfig.brokerId
     val brokerEpoch = zkClusterInstance.getUnderlying.brokers.head.replicaManager.brokerEpochSupplier.apply()
     val request = new AllocateProducerIdsRequest.Builder(new AllocateProducerIdsRequestData()
       .setBrokerId(brokerId)

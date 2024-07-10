@@ -285,7 +285,7 @@ public final class TieredStorageTestContext implements AutoCloseable {
     }
 
     public LocalTieredStorageSnapshot takeTieredStorageSnapshot() {
-        int aliveBrokerId = harness.aliveBrokers().head().config().brokerId();
+        int aliveBrokerId = harness.aliveBrokers().head().config().serverConfig().brokerId();
         return LocalTieredStorageSnapshot.takeSnapshot(remoteStorageManager(aliveBrokerId));
     }
 
@@ -317,7 +317,7 @@ public final class TieredStorageTestContext implements AutoCloseable {
     }
 
     public boolean isActive(Integer brokerId) {
-        return harness.aliveBrokers().exists(b -> b.config().brokerId() == brokerId);
+        return harness.aliveBrokers().exists(b -> b.config().serverConfig().brokerId() == brokerId);
     }
 
     public boolean isAssignedReplica(TopicPartition topicPartition, Integer replicaId)

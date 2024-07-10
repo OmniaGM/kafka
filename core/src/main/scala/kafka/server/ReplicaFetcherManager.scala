@@ -32,17 +32,17 @@ class ReplicaFetcherManager(brokerConfig: KafkaConfig,
                             metadataVersionSupplier: () => MetadataVersion,
                             brokerEpochSupplier: () => Long)
       extends AbstractFetcherManager[ReplicaFetcherThread](
-        name = "ReplicaFetcherManager on broker " + brokerConfig.brokerId,
+        name = "ReplicaFetcherManager on broker " + brokerConfig.serverConfig.brokerId,
         clientId = "Replica",
         numFetchers = brokerConfig.numReplicaFetchers) {
 
   override def createFetcherThread(fetcherId: Int, sourceBroker: BrokerEndPoint): ReplicaFetcherThread = {
     val prefix = threadNamePrefix.map(tp => s"$tp:").getOrElse("")
     val threadName = s"${prefix}ReplicaFetcherThread-$fetcherId-${sourceBroker.id}"
-    val logContext = new LogContext(s"[ReplicaFetcher replicaId=${brokerConfig.brokerId}, leaderId=${sourceBroker.id}, " +
+    val logContext = new LogContext(s"[ReplicaFetcher replicaId=${brokerConfig.serverConfig.brokerId}, leaderId=${sourceBroker.id}, " +
       s"fetcherId=$fetcherId] ")
     val endpoint = new BrokerBlockingSender(sourceBroker, brokerConfig, metrics, time, fetcherId,
-      s"broker-${brokerConfig.brokerId}-fetcher-$fetcherId", logContext)
+      s"broker-${brokerConfig.serverConfig.brokerId}-fetcher-$fetcherId", logContext)
     val fetchSessionHandler = new FetchSessionHandler(logContext, sourceBroker.id)
     val leader = new RemoteLeaderEndPoint(logContext.logPrefix, endpoint, fetchSessionHandler, brokerConfig,
       replicaManager, quotaManager, metadataVersionSupplier, brokerEpochSupplier)

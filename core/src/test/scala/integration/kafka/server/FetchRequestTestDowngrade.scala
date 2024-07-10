@@ -50,11 +50,11 @@ class FetchRequestTestDowngrade extends BaseRequestTest {
         val consumer = createConsumer()
 
         ensureControllerIn(Seq(0))
-        assertEquals(0, controllerSocketServer.config.brokerId)
+        assertEquals(0, controllerSocketServer.config.serverConfig.brokerId)
         val partitionLeaders = createTopicWithAssignment(tp.topic, Map(tp.partition -> Seq(1, 0)))
         TestUtils.waitForAllPartitionsMetadata(servers, tp.topic, 1)
         ensureControllerIn(Seq(1))
-        assertEquals(1, controllerSocketServer.config.brokerId)
+        assertEquals(1, controllerSocketServer.config.serverConfig.brokerId)
 
         assertEquals(1, partitionLeaders(0))
 
@@ -67,7 +67,7 @@ class FetchRequestTestDowngrade extends BaseRequestTest {
     }
 
     private def ensureControllerIn(brokerIds: Seq[Int]): Unit = {
-        while (!brokerIds.contains(controllerSocketServer.config.brokerId)) {
+        while (!brokerIds.contains(controllerSocketServer.config.serverConfig.brokerId)) {
             zkClient.deleteController(ZkVersion.MatchAnyVersion)
             TestUtils.waitUntilControllerElected(zkClient)
         }

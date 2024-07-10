@@ -18,7 +18,7 @@ package kafka.zk
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util
-import java.util.Properties
+import java.util.{Optional, Properties}
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.JsonProcessingException
 import kafka.api.LeaderAndIsr
@@ -50,6 +50,7 @@ import org.apache.zookeeper.data.{ACL, Stat}
 import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{Map, Seq, immutable, mutable}
+import scala.compat.java8.OptionConverters.RichOptionForJava8
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -152,7 +153,7 @@ object BrokerIdZNode {
    * The JSON format includes a top level host and port for compatibility with older clients.
    */
   def encode(version: Int, host: String, port: Int, advertisedEndpoints: Seq[EndPoint], jmxPort: Int,
-             rack: Option[String], features: Features[SupportedVersionRange]): Array[Byte] = {
+             rack: Optional[String], features: Features[SupportedVersionRange]): Array[Byte] = {
     val jsonMap = collection.mutable.Map(VersionKey -> version,
       HostKey -> host,
       PortKey -> port,
@@ -160,7 +161,7 @@ object BrokerIdZNode {
       JmxPortKey -> jmxPort,
       TimestampKey -> Time.SYSTEM.milliseconds().toString
     )
-    rack.foreach(rack => if (version >= 3) jsonMap += (RackKey -> rack))
+    rack.ifPresent(rack => if (version >= 3) jsonMap += (RackKey -> rack))
 
     if (version >= 4) {
       jsonMap += (ListenerSecurityProtocolMapKey -> advertisedEndpoints.map { endPoint =>
@@ -283,7 +284,7 @@ object BrokerIdZNode {
             listeners.map(EndPoint.createEndPoint(_, securityProtocolMap))
           }
 
-        val rack = brokerInfo.get(RackKey).flatMap(_.to[Option[String]])
+        val rack: Optional[String] = brokerInfo.get(RackKey).flatMap(_.to[Option[String]]).asJava
         val features = featuresAsJavaMap(brokerInfo)
         BrokerInfo(
           Broker(id, endpoints, rack, fromSupportedFeaturesMap(features)), version, jmxPort)

@@ -266,7 +266,7 @@ class SslAdminIntegrationTest extends SaslSslAdminIntegrationTest {
     requestThreads.filter(_.getState == Thread.State.WAITING).toList
   }
 
-  private def numRequestThreads = servers.head.config.numIoThreads * servers.size
+  private def numRequestThreads = servers.head.config.serverConfig.numIoThreads * servers.size
 
   private def waitForNoBlockedRequestThreads(): Unit = {
     val (blockedThreads, _) = TestUtils.computeUntilTrue(blockedRequestThreads)(_.isEmpty)

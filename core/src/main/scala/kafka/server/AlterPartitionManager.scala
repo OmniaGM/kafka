@@ -98,7 +98,7 @@ object AlterPartitionManager {
       controllerChannelManager = channelManager,
       scheduler = scheduler,
       time = time,
-      brokerId = config.brokerId,
+      brokerId = config.serverConfig.brokerId,
       brokerEpochSupplier = brokerEpochSupplier,
       metadataVersionSupplier = () => metadataCache.metadataVersion()
     )

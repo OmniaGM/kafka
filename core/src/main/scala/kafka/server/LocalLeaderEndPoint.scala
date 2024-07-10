@@ -50,7 +50,7 @@ class LocalLeaderEndPoint(sourceBroker: BrokerEndPoint,
                           replicaManager: ReplicaManager,
                           quota: ReplicaQuota) extends LeaderEndPoint with Logging {
 
-  private val replicaId = brokerConfig.brokerId
+  private val replicaId = brokerConfig.serverConfig.brokerId
   private val maxBytes = brokerConfig.replicaFetchResponseMaxBytes
   private val fetchSize = brokerConfig.replicaFetchMaxBytes
   private var inProgressPartition: Option[TopicPartition] = None

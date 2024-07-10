@@ -245,10 +245,10 @@ class KafkaServer(
           loader.load()
         }
 
-        val verificationId = if (config.brokerId < 0) {
+        val verificationId = if (config.serverConfig.brokerId < 0) {
           OptionalInt.empty()
         } else {
-          OptionalInt.of(config.brokerId)
+          OptionalInt.of(config.serverConfig.brokerId)
         }
         val verificationFlags = if (config.migrationEnabled) {
           util.EnumSet.noneOf(classOf[VerificationFlag])
@@ -258,8 +258,8 @@ class KafkaServer(
         initialMetaPropsEnsemble.verify(Optional.of(_clusterId), verificationId, verificationFlags)
 
         /* generate brokerId */
-        config.brokerId = getOrGenerateBrokerId(initialMetaPropsEnsemble)
-        logContext = new LogContext(s"[KafkaServer id=${config.brokerId}] ")
+        config.serverConfig.brokerId(getOrGenerateBrokerId(initialMetaPropsEnsemble))
+        logContext = new LogContext(s"[KafkaServer id=${config.serverConfig.brokerId}] ")
         this.logIdent = logContext.logPrefix
 
         // initialize dynamic broker configs from ZooKeeper. Any updates made after this will be
@@ -267,7 +267,7 @@ class KafkaServer(
         config.dynamicConfig.initialize(Some(zkClient), clientMetricsReceiverPluginOpt = None)
 
         /* start scheduler */
-        kafkaScheduler = new KafkaScheduler(config.backgroundThreads)
+        kafkaScheduler = new KafkaScheduler(config.serverConfig.backgroundThreads)
         kafkaScheduler.startup()
 
         /* create and configure metrics */
@@ -291,7 +291,7 @@ class KafkaServer(
             val logDir = e.getKey
             val builder = new MetaProperties.Builder(e.getValue).
               setClusterId(_clusterId).
-              setNodeId(config.brokerId)
+              setNodeId(config.serverConfig.brokerId)
             if (!builder.directoryId().isPresent) {
               if (config.migrationEnabled) {
                 builder.setDirectoryId(copier.generateValidDirectoryId())
@@ -310,7 +310,7 @@ class KafkaServer(
           copier.writeLogDirChanges()
           copier.copy()
         }
-        metaPropsEnsemble.verify(Optional.of(_clusterId), OptionalInt.of(config.brokerId), verificationFlags)
+        metaPropsEnsemble.verify(Optional.of(_clusterId), OptionalInt.of(config.serverConfig.brokerId), verificationFlags)
 
         /* start log manager */
         _logManager = LogManager(
@@ -328,7 +328,7 @@ class KafkaServer(
         remoteLogManagerOpt = createRemoteLogManager()
 
         metadataCache = MetadataCache.zkMetadataCache(
-          config.brokerId,
+          config.serverConfig.brokerId,
           config.interBrokerProtocolVersion,
           brokerFeatures,
           config.migrationEnabled)
@@ -353,7 +353,7 @@ class KafkaServer(
           config = config,
           channelName = "forwarding",
           s"zk-broker-${config.nodeId}-",
-          retryTimeoutMs = config.requestTimeoutMs.longValue
+          retryTimeoutMs = config.serverConfig.requestTimeoutMs.longValue
         )
         clientToControllerChannelManager.start()
 
@@ -454,7 +454,7 @@ class KafkaServer(
             config = config,
             channelName = "quorum",
             s"zk-broker-${config.nodeId}-",
-            retryTimeoutMs = config.requestTimeoutMs.longValue
+            retryTimeoutMs = config.serverConfig.requestTimeoutMs.longValue
           )
 
           val listener = new OffsetTrackingListener()
@@ -506,13 +506,13 @@ class KafkaServer(
         /* create producer ids manager */
         val producerIdManager = if (config.interBrokerProtocolVersion.isAllocateProducerIdsSupported) {
           ProducerIdManager.rpc(
-            config.brokerId,
+            config.serverConfig.brokerId,
             time,
             brokerEpochSupplier = brokerEpochSupplier,
             clientToControllerChannelManager
           )
         } else {
-          ProducerIdManager.zk(config.brokerId, zkClient)
+          ProducerIdManager.zk(config.serverConfig.brokerId, zkClient)
         }
         /* start transaction coordinator, with a separate background thread scheduler for transaction expiration and log loading */
         // Hardcode Time.SYSTEM for now as some Streams tests fail otherwise, it would be good to fix the underlying issue
@@ -550,7 +550,7 @@ class KafkaServer(
         val sessionIdRange = Int.MaxValue / NumFetchSessionCacheShards
         val fetchSessionCacheShards = (0 until NumFetchSessionCacheShards)
           .map(shardNum => new FetchSessionCacheShard(
-            config.maxIncrementalFetchSessionCacheSlots / NumFetchSessionCacheShards,
+            config.serverConfig.maxIncrementalFetchSessionCacheSlots / NumFetchSessionCacheShards,
             KafkaServer.MIN_INCREMENTAL_FETCH_SESSION_EVICTION_MS,
             sessionIdRange,
             shardNum
@@ -581,7 +581,7 @@ class KafkaServer(
           groupCoordinator = groupCoordinator,
           txnCoordinator = transactionCoordinator,
           autoTopicCreationManager = autoTopicCreationManager,
-          brokerId = config.brokerId,
+          brokerId = config.serverConfig.brokerId,
           config = config,
           configRepository = configRepository,
           metadataCache = metadataCache,
@@ -598,12 +598,12 @@ class KafkaServer(
 
         dataPlaneRequestProcessor = createKafkaApis(socketServer.dataPlaneRequestChannel)
 
-        dataPlaneRequestHandlerPool = new KafkaRequestHandlerPool(config.brokerId, socketServer.dataPlaneRequestChannel, dataPlaneRequestProcessor, time,
-          config.numIoThreads, s"${DataPlaneAcceptor.MetricPrefix}RequestHandlerAvgIdlePercent", DataPlaneAcceptor.ThreadPrefix)
+        dataPlaneRequestHandlerPool = new KafkaRequestHandlerPool(config.serverConfig.brokerId, socketServer.dataPlaneRequestChannel, dataPlaneRequestProcessor, time,
+          config.serverConfig.numIoThreads, s"${DataPlaneAcceptor.MetricPrefix}RequestHandlerAvgIdlePercent", DataPlaneAcceptor.ThreadPrefix)
 
         socketServer.controlPlaneRequestChannelOpt.foreach { controlPlaneRequestChannel =>
           controlPlaneRequestProcessor = createKafkaApis(controlPlaneRequestChannel)
-          controlPlaneRequestHandlerPool = new KafkaRequestHandlerPool(config.brokerId, socketServer.controlPlaneRequestChannelOpt.get, controlPlaneRequestProcessor, time,
+          controlPlaneRequestHandlerPool = new KafkaRequestHandlerPool(config.serverConfig.brokerId, socketServer.controlPlaneRequestChannelOpt.get, controlPlaneRequestProcessor, time,
             1, s"${ControlPlaneAcceptor.MetricPrefix}RequestHandlerAvgIdlePercent", ControlPlaneAcceptor.ThreadPrefix)
         }
 
@@ -660,7 +660,7 @@ class KafkaServer(
         shutdownLatch = new CountDownLatch(1)
         startupComplete.set(true)
         isStartingUp.set(false)
-        AppInfoParser.registerAppInfo(Server.MetricsPrefix, config.brokerId.toString, metrics, time.milliseconds())
+        AppInfoParser.registerAppInfo(Server.MetricsPrefix, config.serverConfig.brokerId.toString, metrics, time.milliseconds())
         info("started")
       }
     }
@@ -695,7 +695,7 @@ class KafkaServer(
 
   protected def createRemoteLogManager(): Option[RemoteLogManager] = {
     if (config.remoteLogManagerConfig.isRemoteStorageSystemEnabled()) {
-      Some(new RemoteLogManager(config.remoteLogManagerConfig, config.brokerId, config.logDirs.head, clusterId, time,
+      Some(new RemoteLogManager(config.remoteLogManagerConfig, config.serverConfig.brokerId, config.logDirs.head, clusterId, time,
         (tp: TopicPartition) => logManager.getLog(tp).asJava,
         (tp: TopicPartition, remoteLogStartOffset: java.lang.Long) => {
           logManager.getLog(tp).foreach { log =>
@@ -709,7 +709,7 @@ class KafkaServer(
   }
 
   protected def createReplicaManager(isShuttingDown: AtomicBoolean): ReplicaManager = {
-    val addPartitionsLogContext = new LogContext(s"[AddPartitionsToTxnManager broker=${config.brokerId}]")
+    val addPartitionsLogContext = new LogContext(s"[AddPartitionsToTxnManager broker=${config.serverConfig.brokerId}]")
     val addPartitionsToTxnNetworkClient = NetworkUtils.buildNetworkClient("AddPartitionsManager", config, metrics, time, addPartitionsLogContext)
     val addPartitionsToTxnManager = new AddPartitionsToTxnManager(
       config,
@@ -753,7 +753,7 @@ class KafkaServer(
 
   def createBrokerInfo: BrokerInfo = {
     val endPoints = config.effectiveAdvertisedBrokerListeners.map(e => s"${e.host}:${e.port}")
-    zkClient.getAllBrokersInCluster.filter(_.id != config.brokerId).foreach { broker =>
+    zkClient.getAllBrokersInCluster.filter(_.id != config.serverConfig.brokerId).foreach { broker =>
       val commonEndPoints = broker.endPoints.map(e => s"${e.host}:${e.port}").intersect(endPoints)
       require(commonEndPoints.isEmpty, s"Configured end points ${commonEndPoints.mkString(",")} in" +
         s" advertised listeners are already registered by broker ${broker.id}")
@@ -776,7 +776,7 @@ class KafkaServer(
     val jmxPort = System.getProperty("com.sun.management.jmxremote.port", "-1").toInt
 
     BrokerInfo(
-      Broker(config.brokerId, updatedEndpoints, config.rack, brokerFeatures.supportedFeatures),
+      Broker(config.serverConfig.brokerId, updatedEndpoints, config.serverConfig.rack, brokerFeatures.supportedFeatures),
       config.interBrokerProtocolVersion,
       jmxPort)
   }
@@ -819,15 +819,15 @@ class KafkaServer(
         new NetworkClient(
           selector,
           metadataUpdater,
-          config.brokerId.toString,
+          config.serverConfig.brokerId.toString,
           1,
           0,
           0,
           Selectable.USE_DEFAULT_BUFFER_SIZE,
           Selectable.USE_DEFAULT_BUFFER_SIZE,
-          config.requestTimeoutMs,
-          config.connectionSetupTimeoutMs,
-          config.connectionSetupTimeoutMaxMs,
+          config.serverConfig.requestTimeoutMs,
+          config.serverConfig.connectionSetupTimeoutMs,
+          config.serverConfig.connectionSetupTimeoutMaxMs,
           time,
           false,
           new ApiVersions,
@@ -887,7 +887,7 @@ class KafkaServer(
 
               val controlledShutdownRequest = new ControlledShutdownRequest.Builder(
                   new ControlledShutdownRequestData()
-                    .setBrokerId(config.brokerId)
+                    .setBrokerId(config.serverConfig.brokerId)
                     .setBrokerEpoch(kafkaController.brokerEpoch),
                     controlledShutdownApiVersion)
               val request = networkClient.newClientRequest(prevController.idString, controlledShutdownRequest,
@@ -921,7 +921,7 @@ class KafkaServer(
             }
           }
           if (!shutdownSucceeded && remainingRetries > 0) {
-            Thread.sleep(config.controlledShutdownRetryBackoffMs)
+            Thread.sleep(config.serverConfig.controlledShutdownRetryBackoffMs)
             info(s"Retrying controlled shutdown ($remainingRetries retries remaining)")
           }
         }
@@ -932,7 +932,7 @@ class KafkaServer(
       shutdownSucceeded
     }
 
-    if (startupComplete.get() && config.controlledShutdownEnable) {
+    if (startupComplete.get() && config.serverConfig.controlledShutdownEnable) {
       // We request the controller to do a controlled shutdown. On failure, we backoff for a configured period
       // of time and try again for a configured number of retries. If all the attempt fails, we simply force
       // the shutdown.
@@ -955,7 +955,7 @@ class KafkaServer(
         }
       }
 
-      val shutdownSucceeded = doControlledShutdown(config.controlledShutdownMaxRetries.intValue)
+      val shutdownSucceeded = doControlledShutdown(config.serverConfig.controlledShutdownMaxRetries.intValue)
 
       if (!shutdownSucceeded)
         warn("Proceeding to do an unclean shutdown as all the controlled shutdown attempts failed")
@@ -1076,7 +1076,7 @@ class KafkaServer(
 
         startupComplete.set(false)
         isShuttingDown.set(false)
-        CoreUtils.swallow(AppInfoParser.unregisterAppInfo(Server.MetricsPrefix, config.brokerId.toString, metrics), this)
+        CoreUtils.swallow(AppInfoParser.unregisterAppInfo(Server.MetricsPrefix, config.serverConfig.brokerId.toString, metrics), this)
         shutdownLatch.countDown()
         info("shut down completed")
       }
@@ -1123,14 +1123,14 @@ class KafkaServer(
    * @return The brokerId.
    */
   private def getOrGenerateBrokerId(metaPropsEnsemble: MetaPropertiesEnsemble): Int = {
-    if (config.brokerId >= 0) {
-      config.brokerId
+    if (config.serverConfig.brokerId >= 0) {
+      config.serverConfig.brokerId
     } else if (metaPropsEnsemble.nodeId().isPresent) {
       metaPropsEnsemble.nodeId().getAsInt
-    } else if (config.brokerIdGenerationEnable) {
+    } else if (config.serverConfig.brokerIdGenerationEnable) {
       generateBrokerId()
     } else
-      throw new RuntimeException(s"No broker ID found, and ${config.brokerIdGenerationEnable} is disabled.")
+      throw new RuntimeException(s"No broker ID found, and ${config.serverConfig.brokerIdGenerationEnable} is disabled.")
   }
 
   /**
@@ -1140,7 +1140,7 @@ class KafkaServer(
     */
   private def generateBrokerId(): Int = {
     try {
-      zkClient.generateBrokerSequenceId() + config.maxReservedBrokerId
+      zkClient.generateBrokerSequenceId() + config.serverConfig.maxReservedBrokerId
     } catch {
       case e: Exception =>
         error("Failed to generate broker.id due to ", e)

@@ -125,11 +125,11 @@ class TestRaftServer(
     )
 
     dataPlaneRequestHandlerPool = new KafkaRequestHandlerPool(
-      config.brokerId,
+      config.serverConfig.brokerId,
       socketServer.dataPlaneRequestChannel,
       requestHandler,
       time,
-      config.numIoThreads,
+      config.serverConfig.numIoThreads,
       s"${DataPlaneAcceptor.MetricPrefix}RequestHandlerAvgIdlePercent",
       DataPlaneAcceptor.ThreadPrefix
     )

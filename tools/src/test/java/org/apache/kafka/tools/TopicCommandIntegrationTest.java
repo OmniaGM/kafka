@@ -705,7 +705,7 @@ public class TopicCommandIntegrationTest extends kafka.integration.KafkaServerTe
                 () -> {
                     boolean result = true;
                     for (KafkaBroker server : JavaConverters.asJavaCollection(brokers())) {
-                        if (server.config().brokerId() != 0) {
+                        if (server.config().serverConfig().brokerId() != 0) {
                             Set<String> topicNames = Collections.singleton(testTopicName);
                             Collection<MetadataResponseData.MetadataResponseTopic> topicMetadatas =
                                 JavaConverters.asJavaCollection(server.dataPlaneRequestProcessor().metadataCache()
@@ -814,7 +814,7 @@ public class TopicCommandIntegrationTest extends kafka.integration.KafkaServerTe
         // Enable throttling. Note the broker config sets the replica max fetch bytes to `1` upon to minimize replication
         // throughput so the reassignment doesn't complete quickly.
         List<Integer> brokerIds = JavaConverters.seqAsJavaList(brokers()).stream()
-            .map(broker -> broker.config().brokerId()).collect(Collectors.toList());
+            .map(broker -> broker.config().serverConfig().brokerId()).collect(Collectors.toList());
 
         ToolsTestUtils.setReplicationThrottleForPartitions(adminClient, brokerIds, Collections.singleton(tp), 1);
 

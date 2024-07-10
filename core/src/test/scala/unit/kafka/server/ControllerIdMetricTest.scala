@@ -36,7 +36,7 @@ class ControllerIdMetricTest extends KafkaServerTestHarness {
   def testZkControllerId(): Unit = {
     val server = servers.head
     TestUtils.retry(30000) {
-      assertEquals(server.config.brokerId, server.getCurrentControllerIdFromOldController())
+      assertEquals(server.config.serverConfig.brokerId, server.getCurrentControllerIdFromOldController())
     }
   }
 

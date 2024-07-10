@@ -173,7 +173,7 @@ class ReplicaManagerTest {
       scheduler = new MockScheduler(time),
       logManager = mockLogMgr,
       quotaManagers = quotaManager,
-      metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+      metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
       logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size),
       alterPartitionManager = alterPartitionManager)
     try {
@@ -202,7 +202,7 @@ class ReplicaManagerTest {
       scheduler = new MockScheduler(time),
       logManager = mockLogMgr,
       quotaManagers = quotaManager,
-      metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+      metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
       logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size),
       alterPartitionManager = alterPartitionManager)
     try {
@@ -228,7 +228,7 @@ class ReplicaManagerTest {
       scheduler = new MockScheduler(time),
       logManager = mockLogMgr,
       quotaManagers = quotaManager,
-      metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+      metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
       logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size),
       alterPartitionManager = alterPartitionManager,
       threadNamePrefix = Option(this.getClass.getName))
@@ -489,7 +489,7 @@ class ReplicaManagerTest {
         scheduler = new MockScheduler(time),
         logManager = mockLogMgr,
         quotaManagers = quotaManager,
-        metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+        metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
         logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size),
         alterPartitionManager = alterPartitionManager,
         threadNamePrefix = Option(this.getClass.getName))
@@ -2550,7 +2550,7 @@ class ReplicaManagerTest {
       config.dynamicConfig.initialize(None, None)
       val props = new Properties()
       props.put(TransactionLogConfigs.TRANSACTION_PARTITION_VERIFICATION_ENABLE_CONFIG, "true")
-      config.dynamicConfig.updateBrokerConfig(config.brokerId, props)
+      config.dynamicConfig.updateBrokerConfig(config.serverConfig.brokerId, props)
       TestUtils.waitUntilTrue(() => config.transactionPartitionVerificationEnable == true, "Config did not dynamically update.")
 
       // Try to append more records. We don't need to send a request since the transaction is already ongoing.
@@ -2602,7 +2602,7 @@ class ReplicaManagerTest {
       config.dynamicConfig.initialize(None, None)
       val props = new Properties()
       props.put(TransactionLogConfigs.TRANSACTION_PARTITION_VERIFICATION_ENABLE_CONFIG, "false")
-      config.dynamicConfig.updateBrokerConfig(config.brokerId, props)
+      config.dynamicConfig.updateBrokerConfig(config.serverConfig.brokerId, props)
       TestUtils.waitUntilTrue(() => config.transactionPartitionVerificationEnable == false, "Config did not dynamically update.")
 
       // Confirm we did not write to the log and instead returned error.
@@ -2718,7 +2718,7 @@ class ReplicaManagerTest {
       scheduler = time.scheduler,
       logManager = logManager,
       quotaManagers = quotaManager,
-      metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+      metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
       logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size),
       alterPartitionManager = alterPartitionManager,
       threadNamePrefix = Option(this.getClass.getName))
@@ -2802,7 +2802,7 @@ class ReplicaManagerTest {
       scheduler = time.scheduler,
       logManager = logManager,
       quotaManagers = quotaManager,
-      metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+      metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
       logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size),
       alterPartitionManager = alterPartitionManager,
       threadNamePrefix = Option(this.getClass.getName))
@@ -3034,7 +3034,7 @@ class ReplicaManagerTest {
         new ReplicaFetcherManager(this.config, rm, metrics, time, threadNamePrefix, replicationQuotaManager, () => this.metadataCache.metadataVersion(), () => 1) {
 
           override def createFetcherThread(fetcherId: Int, sourceBroker: BrokerEndPoint): ReplicaFetcherThread = {
-            val logContext = new LogContext(s"[ReplicaFetcher replicaId=${rm.config.brokerId}, leaderId=${sourceBroker.id}, " +
+            val logContext = new LogContext(s"[ReplicaFetcher replicaId=${rm.config.serverConfig.brokerId}, leaderId=${sourceBroker.id}, " +
               s"fetcherId=$fetcherId] ")
             val fetchSessionHandler = new FetchSessionHandler(logContext, sourceBroker.id)
             val leader = new RemoteLeaderEndPoint(logContext.logPrefix, blockingSend, fetchSessionHandler, rm.config,
@@ -4621,7 +4621,7 @@ class ReplicaManagerTest {
         scheduler = new MockScheduler(time),
         logManager = mockLogMgr,
         quotaManagers = quotaManager,
-        metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+        metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
         logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size),
         alterPartitionManager = alterPartitionManager) {
         override def getPartitionOrException(topicPartition: TopicPartition): Partition = {
@@ -6528,7 +6528,7 @@ class ReplicaManagerTest {
       scheduler = new MockScheduler(time),
       logManager = mockLogMgr,
       quotaManagers = quotaManager,
-      metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+      metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
       logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size),
       alterPartitionManager = alterPartitionManager))
 
@@ -6688,7 +6688,7 @@ class ReplicaManagerTest {
       scheduler = time.scheduler,
       logManager = logManager,
       quotaManagers = quotaManager,
-      metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+      metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
       logDirFailureChannel = logDirFailureChannel,
       alterPartitionManager = alterPartitionManager,
       threadNamePrefix = Option(this.getClass.getName),
@@ -6708,7 +6708,7 @@ class ReplicaManagerTest {
 
       // Then
       TestUtils.retry(60000) {
-         verify(mockZkClient).propagateLogDirEvent(config.brokerId)
+         verify(mockZkClient).propagateLogDirEvent(config.serverConfig.brokerId)
       }
     } finally {
       Utils.tryAll(util.Arrays.asList[Callable[Void]](

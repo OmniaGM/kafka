@@ -25,6 +25,8 @@ import org.apache.kafka.common.security.auth.SecurityProtocol
 import org.junit.jupiter.api.Assertions.{assertEquals, assertFalse, assertTrue}
 import org.junit.jupiter.api.{BeforeEach, Test}
 
+import java.util.Optional
+
 
 class ControllerContextTest {
 
@@ -41,7 +43,7 @@ class ControllerContextTest {
     val brokerEpochs = Seq(1,2,3).map { brokerId =>
       val endpoint = new EndPoint("localhost", 9900 + brokerId, new ListenerName("PLAINTEXT"),
         SecurityProtocol.PLAINTEXT)
-      Broker(brokerId, Seq(endpoint), rack = None) -> 1L
+      Broker(brokerId, Seq(endpoint), rack = Optional.empty()) -> 1L
     }.toMap
 
     context.setLiveBrokers(brokerEpochs)

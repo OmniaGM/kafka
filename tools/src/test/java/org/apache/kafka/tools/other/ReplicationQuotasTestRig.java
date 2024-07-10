@@ -251,7 +251,7 @@ public class ReplicationQuotasTestRig {
                     long offset = broker.getLogManager().getLog(new TopicPartition(TOPIC_NAME, partitionId), false).map(UnifiedLog::logEndOffset).getOrElse(() -> -1L);
                     if (offset >= 0 && offset != config.msgsPerPartition) {
                         throw new RuntimeException(
-                            "Run failed as offsets did not match for partition " + partitionId + " on broker " + broker.config().brokerId() + ". " +
+                            "Run failed as offsets did not match for partition " + partitionId + " on broker " + broker.config().serverConfig().brokerId() + ". " +
                             "Expected " + config.msgsPerPartition + " but was " + offset + "."
                         );
                     }
@@ -350,16 +350,16 @@ public class ReplicationQuotasTestRig {
         void printRateMetrics() {
             for (KafkaServer broker : servers) {
                 double leaderRate = measuredRate(broker, QuotaType.LeaderReplication$.MODULE$);
-                if (broker.config().brokerId() == 100)
+                if (broker.config().serverConfig().brokerId() == 100)
                     LOGGER.info("waiting... Leader rate on 101 is " + leaderRate);
-                record(leaderRates, broker.config().brokerId(), leaderRate);
+                record(leaderRates, broker.config().serverConfig().brokerId(), leaderRate);
                 if (leaderRate > 0)
-                    LOGGER.trace("Leader Rate on " + broker.config().brokerId() + " is " + leaderRate);
+                    LOGGER.trace("Leader Rate on " + broker.config().serverConfig().brokerId() + " is " + leaderRate);
 
                 double followerRate = measuredRate(broker, QuotaType.FollowerReplication$.MODULE$);
-                record(followerRates, broker.config().brokerId(), followerRate);
+                record(followerRates, broker.config().serverConfig().brokerId(), followerRate);
                 if (followerRate > 0)
-                    LOGGER.trace("Follower Rate on " + broker.config().brokerId() + " is " + followerRate);
+                    LOGGER.trace("Follower Rate on " + broker.config().serverConfig().brokerId() + " is " + followerRate);
             }
         }
 

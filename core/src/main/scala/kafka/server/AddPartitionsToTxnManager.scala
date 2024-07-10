@@ -70,9 +70,9 @@ class AddPartitionsToTxnManager(
   partitionFor: String => Int,
   time: Time
 ) extends InterBrokerSendThread(
-  "AddPartitionsToTxnSenderThread-" + config.brokerId,
+  "AddPartitionsToTxnSenderThread-" + config.serverConfig.brokerId,
   client,
-  config.requestTimeoutMs,
+  config.serverConfig.requestTimeoutMs,
   time
 ) with Logging {
 

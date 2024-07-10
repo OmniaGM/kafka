@@ -876,7 +876,7 @@ class TransactionsTest extends IntegrationTestHarness {
         partitionStartOffsets.forall {
           case (partition, offset) => {
             val lso = broker.replicaManager.localLog(partition).get.logStartOffset
-            offsets.put(broker.config.brokerId, lso)
+            offsets.put(broker.config.serverConfig.brokerId, lso)
             offset == lso
           }
         }

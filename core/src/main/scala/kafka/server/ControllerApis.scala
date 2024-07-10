@@ -227,7 +227,7 @@ class ControllerApis(
     getDeletableTopics: Iterable[String] => Set[String]
   ): CompletableFuture[util.List[DeletableTopicResult]] = {
     // Check if topic deletion is enabled at all.
-    if (!config.deleteTopicEnable) {
+    if (!config.serverConfig.deleteTopicEnable) {
       if (apiVersion < 3) {
         throw new InvalidRequestException("Topic deletion is disabled.")
       } else {

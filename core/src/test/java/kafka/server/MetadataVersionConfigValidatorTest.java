@@ -24,6 +24,7 @@ import org.apache.kafka.image.MetadataProvenance;
 import org.apache.kafka.image.loader.LogDeltaManifest;
 import org.apache.kafka.raft.LeaderAndEpoch;
 import org.apache.kafka.server.common.MetadataVersion;
+import org.apache.kafka.server.config.ServerConfigs;
 import org.apache.kafka.server.fault.FaultHandler;
 
 import org.junit.jupiter.api.Test;
@@ -69,9 +70,11 @@ public class MetadataVersionConfigValidatorTest {
     void testValidatesConfigOnMetadataChange() throws Exception {
         MetadataVersion metadataVersion = MetadataVersion.IBP_3_7_IV2;
         KafkaConfig config = mock(KafkaConfig.class);
+        ServerConfigs serverConfig = mock(ServerConfigs.class);
         FaultHandler faultHandler = mock(FaultHandler.class);
 
-        when(config.brokerId()).thenReturn(8);
+        when(config.serverConfig()).thenReturn(serverConfig);
+        when(serverConfig.brokerId()).thenReturn(8);
 
         testWith(metadataVersion, config, faultHandler);
 
@@ -85,10 +88,12 @@ public class MetadataVersionConfigValidatorTest {
         MetadataVersion metadataVersion = MetadataVersion.IBP_3_7_IV2;
         Exception exception = new Exception();
         KafkaConfig config = mock(KafkaConfig.class);
+        ServerConfigs serverConfig = mock(ServerConfigs.class);
         FaultHandler faultHandler = mock(FaultHandler.class);
 
         when(faultHandler.handleFault(any(), any())).thenReturn(new RuntimeException("returned exception"));
-        when(config.brokerId()).thenReturn(8);
+        when(config.serverConfig()).thenReturn(serverConfig);
+        when(serverConfig.brokerId()).thenReturn(8);
         willAnswer(invocation -> {
             throw exception;
         }).given(config).validateWithMetadataVersion(eq(metadataVersion));

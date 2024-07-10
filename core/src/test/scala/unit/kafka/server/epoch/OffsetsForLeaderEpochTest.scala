@@ -72,12 +72,12 @@ class OffsetsForLeaderEpochTest {
       scheduler = null,
       logManager = logManager,
       quotaManagers = quotaManager,
-      metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+      metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
       logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size),
       alterPartitionManager = alterIsrManager)
     val partition = replicaManager.createPartition(tp)
     partition.setLog(mockLog, isFutureLog = false)
-    partition.leaderReplicaIdOpt = Some(config.brokerId)
+    partition.leaderReplicaIdOpt = Some(config.serverConfig.brokerId)
 
     //When
     val response = replicaManager.lastOffsetForLeaderEpoch(request)
@@ -101,7 +101,7 @@ class OffsetsForLeaderEpochTest {
       scheduler = null,
       logManager = logManager,
       quotaManagers = quotaManager,
-      metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+      metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
       logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size),
       alterPartitionManager = alterIsrManager)
     replicaManager.createPartition(tp)
@@ -132,7 +132,7 @@ class OffsetsForLeaderEpochTest {
       scheduler = null,
       logManager = logManager,
       quotaManagers = quotaManager,
-      metadataCache = MetadataCache.zkMetadataCache(config.brokerId, config.interBrokerProtocolVersion),
+      metadataCache = MetadataCache.zkMetadataCache(config.serverConfig.brokerId, config.interBrokerProtocolVersion),
       logDirFailureChannel = new LogDirFailureChannel(config.logDirs.size),
       alterPartitionManager = alterIsrManager)
 

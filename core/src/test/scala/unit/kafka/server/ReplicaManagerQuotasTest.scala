@@ -60,7 +60,7 @@ class ReplicaManagerQuotasTest {
   @Test
   def shouldExcludeSubsequentThrottledPartitions(): Unit = {
     setUpMocks(fetchInfo)
-    val followerReplicaId = configs.last.brokerId
+    val followerReplicaId = configs.last.serverConfig.brokerId
 
     val quota = mockQuota()
     when(quota.isQuotaExceeded)
@@ -78,7 +78,7 @@ class ReplicaManagerQuotasTest {
   @Test
   def shouldGetNoMessagesIfQuotasExceededOnSubsequentPartitions(): Unit = {
     setUpMocks(fetchInfo)
-    val followerReplicaId = configs.last.brokerId
+    val followerReplicaId = configs.last.serverConfig.brokerId
 
     val quota = mockQuota()
     when(quota.isQuotaExceeded)
@@ -96,7 +96,7 @@ class ReplicaManagerQuotasTest {
   @Test
   def shouldGetBothMessagesIfQuotasAllow(): Unit = {
     setUpMocks(fetchInfo)
-    val followerReplicaId = configs.last.brokerId
+    val followerReplicaId = configs.last.serverConfig.brokerId
 
     val quota = mockQuota()
     when(quota.isQuotaExceeded)
@@ -114,7 +114,7 @@ class ReplicaManagerQuotasTest {
   @Test
   def shouldIncludeInSyncThrottledReplicas(): Unit = {
     setUpMocks(fetchInfo, bothReplicasInSync = true)
-    val followerReplicaId = configs.last.brokerId
+    val followerReplicaId = configs.last.serverConfig.brokerId
 
     val quota = mockQuota()
     when(quota.isQuotaExceeded)
@@ -297,7 +297,7 @@ class ReplicaManagerQuotasTest {
 
     val alterIsrManager: AlterPartitionManager = mock(classOf[AlterPartitionManager])
 
-    val leaderBrokerId = configs.head.brokerId
+    val leaderBrokerId = configs.head.serverConfig.brokerId
     quotaManager = QuotaFactory.instantiate(configs.head, metrics, time, "")
     replicaManager = new ReplicaManager(
       metrics = metrics,
@@ -318,9 +318,9 @@ class ReplicaManagerQuotasTest {
       partition.setLog(log, isFutureLog = false)
 
       partition.updateAssignmentAndIsr(
-        replicas = Seq(leaderBrokerId, configs.last.brokerId),
+        replicas = Seq(leaderBrokerId, configs.last.serverConfig.brokerId),
         isLeader = true,
-        isr = if (bothReplicasInSync) Set(leaderBrokerId, configs.last.brokerId) else Set(leaderBrokerId),
+        isr = if (bothReplicasInSync) Set(leaderBrokerId, configs.last.serverConfig.brokerId) else Set(leaderBrokerId),
         addingReplicas = Seq.empty,
         removingReplicas = Seq.empty,
         leaderRecoveryState = LeaderRecoveryState.RECOVERED

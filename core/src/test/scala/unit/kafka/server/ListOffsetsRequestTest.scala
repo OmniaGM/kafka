@@ -59,7 +59,7 @@ class ListOffsetsRequestTest extends BaseRequestTest {
       .build()
 
     val replicaRequest = ListOffsetsRequest.Builder
-      .forReplica(ApiKeys.LIST_OFFSETS.latestVersion, brokers.head.config.brokerId)
+      .forReplica(ApiKeys.LIST_OFFSETS.latestVersion, brokers.head.config.serverConfig.brokerId)
       .setTargetTimes(targetTimes)
       .build()
 
@@ -69,7 +69,7 @@ class ListOffsetsRequestTest extends BaseRequestTest {
       .build()
 
     // Unknown topic
-    val randomBrokerId = brokers.head.config.brokerId
+    val randomBrokerId = brokers.head.config.serverConfig.brokerId
     assertResponseError(Errors.UNKNOWN_TOPIC_OR_PARTITION, randomBrokerId, consumerRequest)
     assertResponseError(Errors.UNKNOWN_TOPIC_OR_PARTITION, randomBrokerId, replicaRequest)
     assertResponseError(Errors.UNKNOWN_TOPIC_OR_PARTITION, randomBrokerId, debugReplicaRequest)
@@ -79,7 +79,7 @@ class ListOffsetsRequestTest extends BaseRequestTest {
     val replicas = topicDescription.get(partition.topic).partitions.get(partition.partition).replicas.asScala.map(_.id).toSet
     val leader = partitionToLeader(partition.partition)
     val follower = replicas.find(_ != leader).get
-    val nonReplica = brokers.map(_.config.brokerId).find(!replicas.contains(_)).get
+    val nonReplica = brokers.map(_.config.serverConfig.brokerId).find(!replicas.contains(_)).get
 
     // Follower
     assertResponseError(Errors.NOT_LEADER_OR_FOLLOWER, follower, consumerRequest)

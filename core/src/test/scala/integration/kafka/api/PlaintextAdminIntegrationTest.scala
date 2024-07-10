@@ -85,7 +85,7 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
   override def setUp(testInfo: TestInfo): Unit = {
     super.setUp(testInfo)
     brokerLoggerConfigResource = new ConfigResource(
-      ConfigResource.Type.BROKER_LOGGER, brokers.head.config.brokerId.toString)
+      ConfigResource.Type.BROKER_LOGGER, brokers.head.config.serverConfig.brokerId.toString)
   }
 
   @AfterEach
@@ -298,7 +298,7 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
 
     if (isKRaftTest()) {
       // In KRaft, we return a random brokerId as the current controller.
-      val brokerIds = brokers.map(_.config.brokerId).toSet
+      val brokerIds = brokers.map(_.config.serverConfig.brokerId).toSet
       assertTrue(brokerIds.contains(controller.id))
     } else {
       assertEquals(brokers.head.dataPlaneRequestProcessor.metadataCache.getControllerId.map(_.id).
@@ -327,7 +327,7 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
     val logDirInfosByBroker = client.describeLogDirs(brokerIds.asJava).allDescriptions.get
 
     (0 until brokerCount).foreach { brokerId =>
-      val server = brokers.find(_.config.brokerId == brokerId).get
+      val server = brokers.find(_.config.serverConfig.brokerId == brokerId).get
       val expectedPartitions = partitionsByBroker(brokerId)
       val logDirInfos = logDirInfosByBroker.get(brokerId)
       val replicaInfos = logDirInfos.asScala.flatMap { case (_, logDirInfo) =>
@@ -358,7 +358,7 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
 
     val replicaDirInfos = client.describeReplicaLogDirs(replicas.asJavaCollection).all.get
     replicaDirInfos.forEach { (topicPartitionReplica, replicaDirInfo) =>
-      val server = brokers.find(_.config.brokerId == topicPartitionReplica.brokerId()).get
+      val server = brokers.find(_.config.serverConfig.brokerId == topicPartitionReplica.brokerId()).get
       val tp = new TopicPartition(topicPartitionReplica.topic(), topicPartitionReplica.partition())
       assertEquals(server.logManager.getLog(tp).get.dir.getParent, replicaDirInfo.getCurrentReplicaLogDir)
     }
@@ -375,11 +375,11 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
     // Generate two mutually exclusive replicaAssignment
     val firstReplicaAssignment = brokers.map { server =>
       val logDir = new File(server.config.logDirs(randomNums(server))).getAbsolutePath
-      new TopicPartitionReplica(topic, 0, server.config.brokerId) -> logDir
+      new TopicPartitionReplica(topic, 0, server.config.serverConfig.brokerId) -> logDir
     }.toMap
     val secondReplicaAssignment = brokers.map { server =>
       val logDir = new File(server.config.logDirs(1 - randomNums(server))).getAbsolutePath
-      new TopicPartitionReplica(topic, 0, server.config.brokerId) -> logDir
+      new TopicPartitionReplica(topic, 0, server.config.serverConfig.brokerId) -> logDir
     }.toMap
 
     // Verify that replica can be created in the specified log directory
@@ -394,7 +394,7 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
     ensureConsistentKRaftMetadata()
     brokers.foreach { server =>
       val logDir = server.logManager.getLog(tp).get.dir.getParent
-      assertEquals(firstReplicaAssignment(new TopicPartitionReplica(topic, 0, server.config.brokerId)), logDir)
+      assertEquals(firstReplicaAssignment(new TopicPartitionReplica(topic, 0, server.config.serverConfig.brokerId)), logDir)
     }
 
     // Verify that replica can be moved to the specified log directory after the topic has been created
@@ -402,7 +402,7 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
     brokers.foreach { server =>
       TestUtils.waitUntilTrue(() => {
         val logDir = server.logManager.getLog(tp).get.dir.getParent
-        secondReplicaAssignment(new TopicPartitionReplica(topic, 0, server.config.brokerId)) == logDir
+        secondReplicaAssignment(new TopicPartitionReplica(topic, 0, server.config.serverConfig.brokerId)) == logDir
       }, "timed out waiting for replica movement")
     }
 
@@ -435,7 +435,7 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
       brokers.foreach { server =>
         TestUtils.waitUntilTrue(() => {
           val logDir = server.logManager.getLog(tp).get.dir.getParent
-          firstReplicaAssignment(new TopicPartitionReplica(topic, 0, server.config.brokerId)) == logDir
+          firstReplicaAssignment(new TopicPartitionReplica(topic, 0, server.config.serverConfig.brokerId)) == logDir
         }, s"timed out waiting for replica movement. Producer future ${producerFuture.value}")
       }
 
@@ -472,8 +472,8 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
     createTopic(topic2)
 
     // Describe topics and broker
-    val brokerResource1 = new ConfigResource(ConfigResource.Type.BROKER, brokers(1).config.brokerId.toString)
-    val brokerResource2 = new ConfigResource(ConfigResource.Type.BROKER, brokers(2).config.brokerId.toString)
+    val brokerResource1 = new ConfigResource(ConfigResource.Type.BROKER, brokers(1).config.serverConfig.brokerId.toString)
+    val brokerResource2 = new ConfigResource(ConfigResource.Type.BROKER, brokers(2).config.serverConfig.brokerId.toString)
     val configResources = Seq(topicResource1, topicResource2, brokerResource1, brokerResource2)
     val describeResult = client.describeConfigs(configResources.asJava)
     val configs = describeResult.all.get
@@ -508,7 +508,7 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
     })
     assertEquals(brokers(1).config.nonInternalValues.size + numInternalConfigsSet,
       configs.get(brokerResource1).entries.size)
-    assertEquals(brokers(1).config.brokerId.toString, configs.get(brokerResource1).get(ServerConfigs.BROKER_ID_CONFIG).value)
+    assertEquals(brokers(1).config.serverConfig.brokerId.toString, configs.get(brokerResource1).get(ServerConfigs.BROKER_ID_CONFIG).value)
     val listenerSecurityProtocolMap = configs.get(brokerResource1).get(SocketServerConfigs.LISTENER_SECURITY_PROTOCOL_MAP_CONFIG)
     assertEquals(brokers(1).config.getString(SocketServerConfigs.LISTENER_SECURITY_PROTOCOL_MAP_CONFIG), listenerSecurityProtocolMap.value)
     assertEquals(SocketServerConfigs.LISTENER_SECURITY_PROTOCOL_MAP_CONFIG, listenerSecurityProtocolMap.name)
@@ -522,7 +522,7 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
     assertTrue(truststorePassword.isSensitive)
     assertFalse(truststorePassword.isReadOnly)
     val compressionType = configs.get(brokerResource1).get(ServerConfigs.COMPRESSION_TYPE_CONFIG)
-    assertEquals(brokers(1).config.compressionType, compressionType.value)
+    assertEquals(brokers(1).config.serverConfig.compressionType, compressionType.value)
     assertEquals(ServerConfigs.COMPRESSION_TYPE_CONFIG, compressionType.name)
     assertTrue(compressionType.isDefault)
     assertFalse(compressionType.isSensitive)
@@ -530,7 +530,7 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
 
     assertEquals(brokers(2).config.nonInternalValues.size + numInternalConfigsSet,
       configs.get(brokerResource2).entries.size)
-    assertEquals(brokers(2).config.brokerId.toString, configs.get(brokerResource2).get(ServerConfigs.BROKER_ID_CONFIG).value)
+    assertEquals(brokers(2).config.serverConfig.brokerId.toString, configs.get(brokerResource2).get(ServerConfigs.BROKER_ID_CONFIG).value)
     assertEquals(brokers(2).config.logCleanerThreads.toString,
       configs.get(brokerResource2).get(CleanerConfig.LOG_CLEANER_THREADS_PROP).value)
 
@@ -903,7 +903,7 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
   @ValueSource(strings = Array("zk", "kraft"))
   def testReplicaCanFetchFromLogStartOffsetAfterDeleteRecords(quorum: String): Unit = {
     val leaders = createTopic(topic, replicationFactor = brokerCount)
-    val followerIndex = if (leaders(0) != brokers.head.config.brokerId) 0 else 1
+    val followerIndex = if (leaders(0) != brokers.head.config.serverConfig.brokerId) 0 else 1
 
     def waitForFollowerLog(expectedStartOffset: Long, expectedEndOffset: Long): Unit = {
       TestUtils.waitUntilTrue(() => brokers(followerIndex).replicaManager.localLog(topicPartition).isDefined,
@@ -968,7 +968,7 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
 
     // we will create another dir just for one server
     val futureLogDir = brokers(0).config.logDirs(1)
-    val futureReplica = new TopicPartitionReplica(topic, 0, brokers(0).config.brokerId)
+    val futureReplica = new TopicPartitionReplica(topic, 0, brokers(0).config.serverConfig.brokerId)
 
     // Verify that replica can be moved to the specified log directory
     client.alterReplicaLogDirs(Map(futureReplica -> futureLogDir).asJava).all.get
@@ -2049,8 +2049,8 @@ class PlaintextAdminIntegrationTest extends BaseAdminIntegrationTest {
     val topic = "incremental-alter-configs-topic"
     val topicResource = new ConfigResource(ConfigResource.Type.TOPIC, topic)
 
-    val appendValues = s"0:${brokers.head.config.brokerId}"
-    val subtractValues = brokers.tail.map(broker => s"0:${broker.config.brokerId}").mkString(",")
+    val appendValues = s"0:${brokers.head.config.serverConfig.brokerId}"
+    val subtractValues = brokers.tail.map(broker => s"0:${broker.config.serverConfig.brokerId}").mkString(",")
     assertNotEquals("", subtractValues)
 
     val topicCreateConfigs = new Properties
@@ -2809,7 +2809,7 @@ object PlaintextAdminIntegrationTest {
 
     var topicConfigEntries2 = Seq(new ConfigEntry(TopicConfig.COMPRESSION_TYPE_CONFIG, "snappy")).asJava
 
-    val brokerResource = new ConfigResource(ConfigResource.Type.BROKER, test.brokers.head.config.brokerId.toString)
+    val brokerResource = new ConfigResource(ConfigResource.Type.BROKER, test.brokers.head.config.serverConfig.brokerId.toString)
     val brokerConfigEntries = Seq(new ConfigEntry(ZkConfigs.ZK_CONNECT_CONFIG, "localhost:2181")).asJava
 
     // Alter configs: first and third are invalid, second is valid

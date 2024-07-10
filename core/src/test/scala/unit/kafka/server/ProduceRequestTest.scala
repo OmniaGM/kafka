@@ -139,9 +139,9 @@ class ProduceRequestTest extends BaseRequestTest {
     // Create a single-partition topic and find a broker which is not the leader
     val partitionToLeader = createTopic(topic)
     val leader = partitionToLeader(partition)
-    val nonReplicaOpt = brokers.find(_.config.brokerId != leader)
+    val nonReplicaOpt = brokers.find(_.config.serverConfig.brokerId != leader)
     assertTrue(nonReplicaOpt.isDefined)
-    val nonReplicaId =  nonReplicaOpt.get.config.brokerId
+    val nonReplicaId =  nonReplicaOpt.get.config.serverConfig.brokerId
 
     // Send the produce request to the non-replica
     val records = MemoryRecords.withRecords(Compression.NONE, new SimpleRecord("key".getBytes, "value".getBytes))

@@ -34,6 +34,8 @@ import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{any, anyInt}
 import org.mockito.Mockito.{mock, verify, when}
 
+import java.util.Optional
+
 class ReplicaStateMachineTest {
   private var controllerContext: ControllerContext = _
   private var mockZkClient: KafkaZkClient = _
@@ -66,7 +68,7 @@ class ReplicaStateMachineTest {
   def testStartupOnlinePartition(): Unit = {
     val endpoint1 = new EndPoint("localhost", 9997, new ListenerName("blah"),
       SecurityProtocol.PLAINTEXT)
-    val liveBrokerEpochs = Map(Broker(brokerId, Seq(endpoint1), rack = None) -> 1L)
+    val liveBrokerEpochs = Map(Broker(brokerId, Seq(endpoint1), rack = Optional.empty) -> 1L)
     controllerContext.setLiveBrokers(liveBrokerEpochs)
     controllerContext.updatePartitionFullReplicaAssignment(partition, ReplicaAssignment(Seq(brokerId)))
     assertEquals(None, controllerContext.replicaStates.get(replica))
@@ -88,7 +90,7 @@ class ReplicaStateMachineTest {
     val offlineReplica = PartitionAndReplica(partition, shutdownBrokerId)
     val endpoint1 = new EndPoint("localhost", 9997, new ListenerName("blah"),
       SecurityProtocol.PLAINTEXT)
-    val liveBrokerEpochs = Map(Broker(brokerId, Seq(endpoint1), rack = None) -> 1L)
+    val liveBrokerEpochs = Map(Broker(brokerId, Seq(endpoint1), rack = Optional.empty()) -> 1L)
     controllerContext.setLiveBrokers(liveBrokerEpochs)
     controllerContext.updatePartitionFullReplicaAssignment(partition, ReplicaAssignment(Seq(shutdownBrokerId)))
     assertEquals(None, controllerContext.replicaStates.get(offlineReplica))
@@ -149,7 +151,7 @@ class ReplicaStateMachineTest {
   def testNewReplicaToOfflineReplicaTransition(): Unit = {
     val endpoint1 = new EndPoint("localhost", 9997, new ListenerName("blah"),
       SecurityProtocol.PLAINTEXT)
-    val liveBrokerEpochs = Map(Broker(brokerId, Seq(endpoint1), rack = None) -> 1L)
+    val liveBrokerEpochs = Map(Broker(brokerId, Seq(endpoint1), rack = Optional.empty()) -> 1L)
     controllerContext.setLiveBrokers(liveBrokerEpochs)
     controllerContext.putReplicaState(replica, NewReplica)
 

@@ -171,7 +171,7 @@ class NodeToControllerChannelManagerImpl(
         metrics,
         time,
         channelName,
-        Map("BrokerId" -> config.brokerId.toString).asJava,
+        Map("BrokerId" -> config.serverConfig.brokerId.toString).asJava,
         false,
         channelBuilder,
         logContext
@@ -179,15 +179,15 @@ class NodeToControllerChannelManagerImpl(
       new NetworkClient(
         selector,
         manualMetadataUpdater,
-        config.brokerId.toString,
+        config.serverConfig.brokerId.toString,
         1,
         50,
         50,
         Selectable.USE_DEFAULT_BUFFER_SIZE,
         Selectable.USE_DEFAULT_BUFFER_SIZE,
         Math.min(Int.MaxValue, Math.min(config.controllerSocketTimeoutMs, retryTimeoutMs)).toInt, // request timeout should not exceed the provided retry timeout
-        config.connectionSetupTimeoutMs,
-        config.connectionSetupTimeoutMaxMs,
+        config.serverConfig.connectionSetupTimeoutMs,
+        config.serverConfig.connectionSetupTimeoutMaxMs,
         time,
         true,
         apiVersions,

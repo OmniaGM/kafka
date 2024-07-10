@@ -1763,8 +1763,8 @@ object GroupCoordinator {
     time: Time,
     metrics: Metrics
   ): GroupCoordinator = {
-    val heartbeatPurgatory = DelayedOperationPurgatory[DelayedHeartbeat]("Heartbeat", config.brokerId)
-    val rebalancePurgatory = DelayedOperationPurgatory[DelayedRebalance]("Rebalance", config.brokerId)
+    val heartbeatPurgatory = DelayedOperationPurgatory[DelayedHeartbeat]("Heartbeat", config.serverConfig.brokerId)
+    val rebalancePurgatory = DelayedOperationPurgatory[DelayedRebalance]("Rebalance", config.serverConfig.brokerId)
     GroupCoordinator(config, replicaManager, heartbeatPurgatory, rebalancePurgatory, time, metrics)
   }
 
@@ -1796,9 +1796,9 @@ object GroupCoordinator {
       groupMaxSize = config.groupCoordinatorConfig.classicGroupMaxSize,
       groupInitialRebalanceDelayMs = config.groupCoordinatorConfig.classicGroupInitialRebalanceDelayMs)
 
-    val groupMetadataManager = new GroupMetadataManager(config.brokerId, config.interBrokerProtocolVersion,
+    val groupMetadataManager = new GroupMetadataManager(config.serverConfig.brokerId, config.interBrokerProtocolVersion,
       offsetConfig, replicaManager, time, metrics)
-    new GroupCoordinator(config.brokerId, groupConfig, offsetConfig, groupMetadataManager, heartbeatPurgatory,
+    new GroupCoordinator(config.serverConfig.brokerId, groupConfig, offsetConfig, groupMetadataManager, heartbeatPurgatory,
       rebalancePurgatory, time, metrics)
   }
 
