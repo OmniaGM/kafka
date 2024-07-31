@@ -18,7 +18,9 @@ package org.apache.kafka.tools.consumer.group;
 
 import kafka.test.ClusterConfig;
 import kafka.test.ClusterInstance;
+import kafka.test.annotation.ClusterConfigProperty;
 import kafka.test.annotation.ClusterTemplate;
+import kafka.test.annotation.ClusterTestDefaults;
 import kafka.test.junit.ClusterTestExtensions;
 
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -31,10 +33,14 @@ import org.apache.kafka.clients.consumer.GroupProtocol;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.consumer.RoundRobinAssignor;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.ConsumerGroupState;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.common.utils.Exit;
 import org.apache.kafka.test.TestUtils;
@@ -55,14 +61,17 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static org.apache.kafka.test.TestUtils.DEFAULT_MAX_WAIT_MS;
 import static org.apache.kafka.test.TestUtils.RANDOM;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -70,6 +79,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(value = ClusterTestExtensions.class)
+@ClusterTestDefaults(serverProperties = {
+        @ClusterConfigProperty(key = "auto.create.topics.enable", value = "false")
+})
 public class DescribeConsumerGroupTest {
     private static final String TOPIC_PREFIX = "test.topic.";
     private static final String GROUP_PREFIX = "test.group.";
@@ -259,6 +271,81 @@ public class DescribeConsumerGroupTest {
             }
         }
     }
+
+    @ClusterTemplate("generator")
+    public void testDescribeAllExistingGroupsWithDeletedTopics(ClusterInstance clusterInstance) throws Exception {
+        this.clusterInstance = clusterInstance;
+
+        for (GroupProtocol groupProtocol: clusterInstance.supportedGroupProtocols()) {
+            // create two topics
+            String topic = TOPIC_PREFIX + groupProtocol.name();
+            createTopic(topic);
+            String topicToBeDeleted = topic + "-delete";
+            createTopic(topicToBeDeleted);
+
+            // producer N records to one of the topics
+            int numberOfProducedRecords = 1;
+            produceRecords(topicToBeDeleted, numberOfProducedRecords);
+
+            List<AutoCloseable> protocolConsumerGroupExecutors = new ArrayList<>();
+            List<String> groups = new ArrayList<>();
+            try {
+                // create single-threaded consumer groups for the topic that will be deleted soon.
+                String groupWithDeletedTopic = GROUP_PREFIX + groupProtocol.name() + ".for-deletedTopic";
+                groups.add(groupWithDeletedTopic);
+                protocolConsumerGroupExecutors.add(consumerGroupClosable(true, groupProtocol, groupWithDeletedTopic, topicToBeDeleted, Collections.emptyMap(), 1));
+
+                // Create N single-threaded consumer groups for the other topic.
+                for (List<String> describeType : DESCRIBE_TYPES) {
+                    String group = GROUP_PREFIX + groupProtocol.name() + "." + String.join("", describeType);
+                    groups.add(group);
+                    protocolConsumerGroupExecutors.add(consumerGroupClosable(groupProtocol, group, topic, Collections.emptyMap()));
+                }
+
+                try (ConsumerGroupCommand.ConsumerGroupService service = consumerGroupService(new String[]{"--bootstrap-server", clusterInstance.bootstrapServers(), "--describe", "--all-groups"})) {
+                    TestUtils.waitForCondition(() -> {
+                        Entry<String, String> res = ToolsTestUtils.grabConsoleOutputAndError(describeGroups(service));
+                        List<String> linesWithoutHeaders = Arrays.stream(res.getKey().trim().split("\n"))
+                                .filter(line -> !line.isEmpty() && !line.contains("CURRENT-OFFSET"))
+                                .collect(Collectors.toList());
+                        Optional<List<String>> groupMetadata = linesWithoutHeaders.stream()
+                                .map(line -> Arrays.stream(line.split(" ")).filter(col -> !col.isEmpty()).collect(Collectors.toList()))
+                                .filter(line -> line.contains(topicToBeDeleted))
+                                .findAny();
+                        boolean groupCaughtUp = groupMetadata.map(metadata -> Collections.frequency(metadata, String.valueOf(numberOfProducedRecords))).orElse(0) == 2;
+
+                        return linesWithoutHeaders.size() == groups.size() && groupCaughtUp;
+                    }, DEFAULT_MAX_WAIT_MS, "Expected a data row and no error in describe results.");
+                }
+
+                // Delete one of the topics
+                deleteTopic(topicToBeDeleted);
+                try (ConsumerGroupCommand.ConsumerGroupService service = consumerGroupService(new String[]{"--bootstrap-server", clusterInstance.bootstrapServers(), "--describe", "--all-groups"})) {
+                    TestUtils.waitForCondition(() -> {
+                        Entry<String, String> res = ToolsTestUtils.grabConsoleOutputAndError(describeGroups(service));
+                        List<String> linesWithoutHeaders = Arrays.stream(res.getKey().trim().split("\n"))
+                                .filter(line -> !line.isEmpty() && !line.contains("CURRENT-OFFSET"))
+                                .collect(Collectors.toList());
+                        Optional<List<String>> groupMetadata = linesWithoutHeaders.stream()
+                                .map(line -> Arrays.stream(line.split(" ")).filter(col -> !col.isEmpty()).collect(Collectors.toList()))
+                                .filter(line -> line.contains(topicToBeDeleted))
+                                .findAny();
+                        boolean noLagOrOffsetMetadata = groupMetadata.map(metadata -> Collections.frequency(metadata, "-")).orElse(0) == 3;
+
+                        return linesWithoutHeaders.size() == groups.size() && noLagOrOffsetMetadata;
+                    }, DEFAULT_MAX_WAIT_MS, "Expected a data row and no error in describe results after deleting one of the consumed topics.");
+                }
+            } finally {
+                for (AutoCloseable protocolConsumerGroupExecutor : protocolConsumerGroupExecutors) {
+                    protocolConsumerGroupExecutor.close();
+                }
+                // remove previous consumer groups, so we can have a clean cluster for next consumer group protocol test.
+                deleteConsumerGroups(groups);
+                deleteTopic(topic);
+            }
+        }
+    }
+
 
     @ClusterTemplate("generator")
     public void testDescribeOffsetsOfExistingGroup(ClusterInstance clusterInstance) throws Exception {
@@ -966,6 +1053,10 @@ public class DescribeConsumerGroupTest {
     }
 
     private AutoCloseable consumerGroupClosable(GroupProtocol protocol, String groupId, String topicName, Map<String, Object> customConfigs, int numConsumers) {
+        return consumerGroupClosable(false, protocol, groupId, topicName, customConfigs, numConsumers);
+    }
+
+    private AutoCloseable consumerGroupClosable(Boolean syncCommit, GroupProtocol protocol, String groupId, String topicName, Map<String, Object> customConfigs, int numConsumers) {
         Map<String, Object> configs = composeConfigs(
                 groupId,
                 protocol.name,
@@ -973,12 +1064,25 @@ public class DescribeConsumerGroupTest {
         );
         return ConsumerGroupCommandTestUtils.buildConsumers(
                 numConsumers,
-                false,
+                syncCommit,
                 topicName,
                 () -> new KafkaConsumer<String, String>(configs)
         );
     }
 
+    private void produceRecords(String topicName, int numberOfRecords) {
+        Properties producerProps = new Properties();
+        producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, clusterInstance.bootstrapServers());
+        producerProps.put(ProducerConfig.ACKS_CONFIG, "-1");
+        producerProps.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "false");
+        KafkaProducer<String, String> producer = new KafkaProducer<>(producerProps, new StringSerializer(), new StringSerializer());
+
+        IntStream.rangeClosed(1, numberOfRecords)
+                .mapToObj(i -> new ProducerRecord<>(topicName, "key" + i, "value" + i))
+                .forEach(producer::send);
+        producer.flush();
+        producer.close();
+    }
     private Map<String, Object> composeConfigs(String groupId, String groupProtocol, Map<String, Object> customConfigs) {
         Map<String, Object> configs = new HashMap<>();
         configs.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, clusterInstance.bootstrapServers());

@@ -89,6 +89,7 @@ class ConsumerGroupCommandTestUtils {
         serverProperties.put(OFFSETS_TOPIC_REPLICATION_FACTOR_CONFIG, "1");
         serverProperties.put(NEW_GROUP_COORDINATOR_ENABLE_CONFIG, "true");
         serverProperties.put(GROUP_COORDINATOR_REBALANCE_PROTOCOLS_CONFIG, "classic,consumer");
+        serverProperties.put("auto.create.topics.enable", "false");
 
         return Collections.singletonList(ClusterConfig.defaultBuilder()
                 .setTypes(Collections.singleton(CO_KRAFT))
@@ -102,6 +103,7 @@ class ConsumerGroupCommandTestUtils {
         serverProperties.put(OFFSETS_TOPIC_PARTITIONS_CONFIG, "1");
         serverProperties.put(OFFSETS_TOPIC_REPLICATION_FACTOR_CONFIG, "1");
         serverProperties.put(NEW_GROUP_COORDINATOR_ENABLE_CONFIG, "false");
+        serverProperties.put("auto.create.topics.enable", "false");
 
         return Collections.singletonList(ClusterConfig.defaultBuilder()
                 .setTypes(Stream.of(ZK, KRAFT).collect(Collectors.toSet()))
