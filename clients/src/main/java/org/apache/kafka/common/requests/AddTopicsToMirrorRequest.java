@@ -35,13 +35,18 @@ public class AddTopicsToMirrorRequest extends AbstractRequest {
             this.data = data;
         }
 
-        public Builder(String mirrorName, Set<String> topics) {
+        public Builder(String mirrorName, Set<String> topics, short replicationFactor) {
             super(ApiKeys.ADD_TOPICS_TO_MIRROR, ApiKeys.ADD_TOPICS_TO_MIRROR.oldestVersion(),
                     ApiKeys.ADD_TOPICS_TO_MIRROR.latestVersion());
             AddTopicsToMirrorRequestData data = new AddTopicsToMirrorRequestData();
             data.setMirrorName(mirrorName);
+            data.setReplicationFactor(replicationFactor);
             topics.forEach(topic -> data.topics().add(new AddTopicsToMirrorRequestData.TopicData().setTopicName(topic)));
             this.data = data;
+        }
+
+        public Builder(String mirrorName, Set<String> topics) {
+            this(mirrorName, topics, (short) -1);
         }
 
         @Override

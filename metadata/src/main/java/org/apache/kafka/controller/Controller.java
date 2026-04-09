@@ -173,6 +173,7 @@ public interface Controller extends AclMutator, AutoCloseable {
     CompletableFuture<AddTopicsToMirrorResponseData> addTopicsToMirror(
             ControllerRequestContext context,
             String mirrorName,
+            short replicationFactor,
             Set<String> topics
     );
 

@@ -252,6 +252,7 @@ public class LogConfig extends AbstractConfig {
                 .define(TopicConfig.REMOTE_LOG_COPY_DISABLE_CONFIG, BOOLEAN, false, MEDIUM, TopicConfig.REMOTE_LOG_COPY_DISABLE_DOC)
                 .define(TopicConfig.REMOTE_LOG_DELETE_ON_DISABLE_CONFIG, BOOLEAN, false, MEDIUM, TopicConfig.REMOTE_LOG_DELETE_ON_DISABLE_DOC)
                 .defineInternal(MIRROR_NAME_CONFIG, STRING, "", null, MEDIUM, MIRROR_NAME_DOC)
+                .defineInternal(TopicConfig.MIRROR_REPLICATION_FACTOR_CONFIG, STRING, "", null, MEDIUM, TopicConfig.MIRROR_REPLICATION_FACTOR_DOC)
                 .defineInternal(INTERNAL_SEGMENT_BYTES_CONFIG, INT, null, null, MEDIUM, INTERNAL_SEGMENT_BYTES_DOC);
     }
 

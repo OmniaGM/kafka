@@ -269,11 +269,12 @@ class ControllerApis(
       throw new ClusterAuthorizationException(s"Request $request needs ALTER permission on ClusterMirror:$mirrorName.")
     val context = new ControllerRequestContext(request.context.header.data, request.context.principal,
       OptionalLong.empty())
+    val replicationFactor = addTopicsToMirrorRequest.data().replicationFactor()
     val topics: util.Set[String] = new util.HashSet[String]()
     addTopicsToMirrorRequest.data().topics().forEach( topic => {
         topics.add(topic.topicName())
     })
-    controller.addTopicsToMirror(context, mirrorName, topics)
+    controller.addTopicsToMirror(context, mirrorName, replicationFactor, topics)
       .handle[Unit] { (response, exception) =>
         if (exception != null) {
           requestHelper.handleError(request, exception)

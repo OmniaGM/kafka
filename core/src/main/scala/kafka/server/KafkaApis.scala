@@ -287,8 +287,9 @@ class KafkaApis(val requestChannel: RequestChannel,
     // mirror.name check
     createTopicsRequest.data().topics().stream().forEach(creatableTopic => {
       if (creatableTopic.configs().stream().anyMatch(creatableTopicConfig =>
-        TopicConfig.MIRROR_NAME_CONFIG.equals(creatableTopicConfig.name())))
-        throw new InvalidRequestException("The 'mirror.name' configuration can only be modified through dedicated mirror management APIs.")
+        TopicConfig.MIRROR_NAME_CONFIG.equals(creatableTopicConfig.name())
+          || TopicConfig.MIRROR_REPLICATION_FACTOR_CONFIG.equals(creatableTopicConfig.name())))
+        throw new InvalidRequestException("The 'mirror.name' and 'mirror.replication.factor' configurations can only be modified through dedicated mirror management APIs.")
     })
 
     forwardToController(request)

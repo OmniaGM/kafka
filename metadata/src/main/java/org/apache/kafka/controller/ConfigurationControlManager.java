@@ -259,7 +259,9 @@ public class ConfigurationControlManager {
                 }
 
                 String newMirrorName = curVal.endsWith(REMOVED_TOPIC_SUFFIX) ? "" : curVal + REMOVED_TOPIC_SUFFIX;
-                Map<String, Entry<OpType, String>> keyToOps = Map.of(mirrorNameConfig, new AbstractMap.SimpleImmutableEntry<>(SET, newMirrorName));
+                Map<String, Entry<OpType, String>> keyToOps = new HashMap<>();
+                keyToOps.put(mirrorNameConfig, new AbstractMap.SimpleImmutableEntry<>(SET, newMirrorName));
+                keyToOps.put(TopicConfig.MIRROR_REPLICATION_FACTOR_CONFIG, new AbstractMap.SimpleImmutableEntry<>(DELETE, null));
 
                 ControllerResult<ApiError> configResult = incrementalAlterConfig(configResource, keyToOps, true);
                 if (configResult.response().isFailure()) {
@@ -396,7 +398,7 @@ public class ConfigurationControlManager {
         return ControllerResult.of(records, data);
     }
 
-    ControllerResult<AddTopicsToMirrorResponseData> addTopicsToMirror(String mirrorName, Set<String> topics) {
+    ControllerResult<AddTopicsToMirrorResponseData> addTopicsToMirror(String mirrorName, short replicationFactor, Set<String> topics) {
         List<ApiMessageAndVersion> records = BoundedList.newArrayBacked(MAX_RECORDS_PER_USER_OP);
         AddTopicsToMirrorResponseData data = new AddTopicsToMirrorResponseData();
         data.setMirrorName(mirrorName);
@@ -415,7 +417,12 @@ public class ConfigurationControlManager {
                 }
             }
 
-            Map<String, Entry<OpType, String>> keyToOps = Map.of(TopicConfig.MIRROR_NAME_CONFIG, new AbstractMap.SimpleImmutableEntry<>(SET, mirrorName));
+            Map<String, Entry<OpType, String>> keyToOps = new HashMap<>();
+            keyToOps.put(TopicConfig.MIRROR_NAME_CONFIG, new AbstractMap.SimpleImmutableEntry<>(SET, mirrorName));
+            if (replicationFactor != -1) {
+                keyToOps.put(TopicConfig.MIRROR_REPLICATION_FACTOR_CONFIG,
+                    new AbstractMap.SimpleImmutableEntry<>(SET, String.valueOf(replicationFactor)));
+            }
 
             ControllerResult<ApiError> configResult = incrementalAlterConfig(configResource, keyToOps, true);
             if (configResult.response().isFailure()) {
@@ -495,8 +502,9 @@ public class ConfigurationControlManager {
             if (entry.getKey().type() != Type.TOPIC) continue;
             String mirrorNameValue = entry.getValue().get(TopicConfig.MIRROR_NAME_CONFIG);
             if (removedSuffix.equals(mirrorNameValue)) {
-                Map<String, Entry<OpType, String>> keyToOps = Map.of(
-                    TopicConfig.MIRROR_NAME_CONFIG, new AbstractMap.SimpleImmutableEntry<>(DELETE, null));
+                Map<String, Entry<OpType, String>> keyToOps = new HashMap<>();
+                keyToOps.put(TopicConfig.MIRROR_NAME_CONFIG, new AbstractMap.SimpleImmutableEntry<>(DELETE, null));
+                keyToOps.put(TopicConfig.MIRROR_REPLICATION_FACTOR_CONFIG, new AbstractMap.SimpleImmutableEntry<>(DELETE, null));
                 ControllerResult<ApiError> configResult = incrementalAlterConfig(entry.getKey(), keyToOps, true);
                 if (configResult.response().isFailure()) {
                     data.setErrorCode(configResult.response().error().code());

@@ -4926,7 +4926,8 @@ public class KafkaAdminClient extends AdminClient {
 
             @Override
             AddTopicsToMirrorRequest.Builder createRequest(int timeoutMs) {
-                return new AddTopicsToMirrorRequest.Builder(mirrorName, topics);
+                return new AddTopicsToMirrorRequest.Builder(mirrorName, topics,
+                    options.replicationFactor().orElse((short) -1));
             }
 
             @Override

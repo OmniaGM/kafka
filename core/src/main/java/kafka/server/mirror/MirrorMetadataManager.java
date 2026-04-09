@@ -1074,6 +1074,28 @@ public class MirrorMetadataManager implements MetadataPublisher, AutoCloseable {
         }
     }
 
+    /**
+     * Creates a mirror topic on the destination with the source's TopicId,
+     * preserving topic identity across clusters. Called during periodic metadata
+     * sync when a topic has mirror.name config but doesn't exist on the destination yet.
+     * Once created, onMetadataUpdate will detect it and start the mirror state machine.
+     */
+    private void createMirrorTopic(String topicName, org.apache.kafka.common.Uuid topicId, int numPartitions, Optional<Short> replicationFactor) {
+        log.info("Creating mirror topic {} on destination (partitions={}, topicId={})",
+                topicName, numPartitions, topicId);
+        var creatableTopic = new org.apache.kafka.common.message.CreateTopicsRequestData.CreatableTopic()
+                .setName(topicName)
+                .setNumPartitions(numPartitions)
+                .setReplicationFactor(replicationFactor.orElse(org.apache.kafka.common.requests.CreateTopicsRequest.NO_REPLICATION_FACTOR))
+                .setMirrorInfo(new org.apache.kafka.common.message.CreateTopicsRequestData.MirrorInfo()
+                        .setTopicId(topicId));
+        var createTopicsData = new org.apache.kafka.common.message.CreateTopicsRequestData()
+                .setTimeoutMs(30000);
+        createTopicsData.topics().add(creatableTopic);
+        channelManager.sendRequest(
+                new org.apache.kafka.common.requests.CreateTopicsRequest.Builder(createTopicsData),
+                new TimeoutHandler(log));
+    }
     /** Processes topic metadata and returns topics that need partition scaling */
     private CreatePartitionsRequestData.CreatePartitionsTopicCollection processTopicMetadata(
             String mirrorName, Collection<MetadataResponse.TopicMetadata> topicMetadata, Map<Integer, Node> brokerNodes) {
@@ -1103,6 +1125,17 @@ public class MirrorMetadataManager implements MetadataPublisher, AutoCloseable {
                         .setCount(sourcePartitionCount)
                         .setAssignments(null)
                 );
+            } else if (metadataImage.topics().getTopic(tm.topicId()) == null &&
+                    tm.error() == Errors.NONE && sourcePartitionCount > 0) {
+                // create topic if didn't exist before
+                Optional<Short> rf = Optional.empty();
+                String rfConfig = (String) metadataImage.configs()
+                        .configProperties(new ConfigResource(ConfigResource.Type.TOPIC, tm.topic()))
+                        .get(TopicConfig.MIRROR_REPLICATION_FACTOR_CONFIG);
+                if (rfConfig != null) {
+                    rf = Optional.of(Short.parseShort(rfConfig));
+                }
+                this.createMirrorTopic(tm.topic(), tm.topicId(), sourcePartitionCount, rf);
             }
         });
 
@@ -1472,14 +1505,18 @@ public class MirrorMetadataManager implements MetadataPublisher, AutoCloseable {
 
     /** Returns the set of topic names configured for the given mirror, optionally including paused topics. */
     Set<String> getConfiguredTopics(String mirrorName, boolean includePaused) {
-        return metadataCache.getAllTopics().stream()
-                .filter(topic -> {
-                    String topicMirrorName = (String) metadataCache.topicConfig(topic).get(TopicConfig.MIRROR_NAME_CONFIG);
-                    if (topicMirrorName == null) return false;
-                    if (!includePaused && topicMirrorName.endsWith(PAUSED_TOPIC_SUFFIX)) return false;
-                    return mirrorName.equals(MirrorUtils.originalMirrorName(topicMirrorName));
-                })
-                .collect(Collectors.toSet());
+        Set<String> result = new HashSet<>();
+        metadataImage.configs().resourceData().entrySet().stream()
+                .filter(entry -> entry.getKey().type() == ConfigResource.Type.TOPIC)
+                .forEach(entry -> {
+                    String topicMirrorName = entry.getValue().data().get(TopicConfig.MIRROR_NAME_CONFIG);
+                    if (topicMirrorName == null) return;
+                    if (!includePaused && topicMirrorName.endsWith(PAUSED_TOPIC_SUFFIX)) return;
+                    if (mirrorName.equals(MirrorUtils.originalMirrorName(topicMirrorName))) {
+                        result.add(entry.getKey().name());
+                    }
+                });
+        return result;
     }
 
     String getSourceBootstrap(String mirrorName) {

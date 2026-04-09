@@ -1796,10 +1796,11 @@ public final class QuorumController implements Controller {
     public CompletableFuture<AddTopicsToMirrorResponseData> addTopicsToMirror(
             ControllerRequestContext context,
             String mirrorName,
+            short replicationFactor,
             Set<String> topics
     ) {
         return appendWriteEvent("addTopicsToMirror", context.deadlineNs(),
-                () -> configurationControl.addTopicsToMirror(mirrorName, topics));
+                () -> configurationControl.addTopicsToMirror(mirrorName, replicationFactor, topics));
     }
 
     @Override

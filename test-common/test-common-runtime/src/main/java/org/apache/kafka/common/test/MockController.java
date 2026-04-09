@@ -131,6 +131,7 @@ public class MockController implements Controller {
     public CompletableFuture<AddTopicsToMirrorResponseData> addTopicsToMirror(
             ControllerRequestContext context,
             String mirrorName,
+            short replicationFactor,
             Set<String> topics
     ) {
         throw new UnsupportedOperationException();

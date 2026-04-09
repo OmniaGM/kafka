@@ -17,10 +17,21 @@
 
 package org.apache.kafka.clients.admin;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * Options for {@link Admin#addTopicsToMirror(String, Set, AddTopicsToMirrorOptions)}.
  */
 public class AddTopicsToMirrorOptions extends AbstractOptions<AddTopicsToMirrorOptions> {
+    private Optional<Short> replicationFactor = Optional.empty();
+
+    public AddTopicsToMirrorOptions replicationFactor(short replicationFactor) {
+        this.replicationFactor = Optional.of(replicationFactor);
+        return this;
+    }
+
+    public Optional<Short> replicationFactor() {
+        return replicationFactor;
+    }
 }

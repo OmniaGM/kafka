@@ -224,6 +224,10 @@ public class TopicConfig {
             "Topics with this configuration set are read-only and can only be modified through mirror management APIs. " +
             "This property is filtered out from DescribeConfigs responses to avoid exposing internal state to users.";
 
+    public static final String MIRROR_REPLICATION_FACTOR_CONFIG = "mirror.replication.factor";
+    public static final String MIRROR_REPLICATION_FACTOR_DOC = "The replication factor used when auto-creating this mirror topic " +
+            "on the destination cluster. This property can only be set through dedicated mirror management APIs.";
+
     /**
      * @deprecated down-conversion is not possible in Apache Kafka 4.0 and newer, hence this configuration is a no-op,
      *             and it is deprecated for removal in Apache Kafka 5.0.

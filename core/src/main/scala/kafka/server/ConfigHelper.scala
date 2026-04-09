@@ -95,6 +95,7 @@ class ConfigHelper(metadataCache: MetadataCache, config: KafkaConfig, configRepo
             if (metadataCache.contains(topic)) {
               val topicProps = configRepository.topicConfig(topic)
               topicProps.remove(TopicConfig.MIRROR_NAME_CONFIG)
+              topicProps.remove(TopicConfig.MIRROR_REPLICATION_FACTOR_CONFIG)
               val logConfig = LogConfig.fromProps(config.extractLogConfigMap, topicProps)
               createResponseConfig(resource, logConfig, createTopicConfigEntry(logConfig, topicProps, includeSynonyms, includeDocumentation)(_, _))
             } else {

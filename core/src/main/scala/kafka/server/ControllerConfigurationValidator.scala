@@ -22,6 +22,7 @@ import java.util.Properties
 import org.apache.kafka.common.config.ConfigResource
 import org.apache.kafka.common.config.ConfigResource.Type
 import org.apache.kafka.common.config.ConfigResource.Type.{BROKER, CLIENT_METRICS, GROUP, TOPIC}
+import org.apache.kafka.common.config.TopicConfig
 import org.apache.kafka.controller.ConfigurationValidator
 import org.apache.kafka.common.errors.{InvalidConfigurationException, InvalidRequestException}
 import org.apache.kafka.common.internals.Topic
@@ -117,6 +118,14 @@ class ControllerConfigurationValidator(kafkaConfig: KafkaConfig) extends Configu
         if (nullTopicConfigs.nonEmpty) {
           throw new InvalidConfigurationException("Null value not supported for topic configs: " +
             nullTopicConfigs.mkString(","))
+        }
+        if (newConfigs.containsKey(TopicConfig.MIRROR_REPLICATION_FACTOR_CONFIG) &&
+            !newConfigs.containsKey(TopicConfig.MIRROR_NAME_CONFIG)) {
+          val hasMirrorName = oldConfigs.containsKey(TopicConfig.MIRROR_NAME_CONFIG)
+          if (!hasMirrorName) {
+            throw new InvalidConfigurationException(
+              s"'${TopicConfig.MIRROR_REPLICATION_FACTOR_CONFIG}' requires '${TopicConfig.MIRROR_NAME_CONFIG}' to be set.")
+          }
         }
         LogConfig.validate(oldConfigs, properties, kafkaConfig.extractLogConfigMap,
           kafkaConfig.remoteLogManagerConfig.isRemoteStorageSystemEnabled())
